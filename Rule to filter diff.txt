@@ -1,0 +1,31 @@
+Rule to filter diff
+- if 0 => keep
+- if -1 => keep
+- if 1 and r = 0 and l = 0 => is candidate
+    - if has \d+་?\D་?\d+ => tag as page annotation
+    - if has number or ) => is marker
+    - if is patterns* => is marker
+    - if is space or punct => ignore
+    - if r.start and l.end are not punct => is midsyl
+    - if l.end is not punct and r.start is tseg => noisy lone marker
+
+- if 1 and l = -1 => is candidate
+    - if r.start and l.end are not punct => is midsyl
+    - if has number or ) => is noisy marker
+    - if is (not space or punct) and (l is space or punct) => is noisy marker
+
+    - else => ignore
+
+
+patterns* = ['པོ་', 'འི', 'ཚོ་', 'ད', 'སུ', 'རིན']
+punct = ['་', '།', 'ཿ', '༔', ':']
+noisy marker
+    - move l to r and change to 0
+    - keep marker
+
+mid syl
+    - ignore current and add prefix(cor) to l
+
+noisey lone marker
+    - move l.end_syl to r and change to 0
+    - keep marker 

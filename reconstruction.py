@@ -104,15 +104,9 @@ def identify_footnote_marker(diff):
 
 
 def is_circle_number(footnote_marker):
-<<<<<<< HEAD
     """
-    This function checks whether a footnote marker is number in circle or not. If so, it will
-    return the number in circle.
-=======
-    '''
     Checks whether a footnote marker is number in circle or not, return if yes.
 
->>>>>>> ca4431620ee4bcef50d4b8dbee3c136c5a70420e
     Input: footnote marker
     Process: 
         - checks whether the footnote marker is number in circle or not
@@ -351,18 +345,6 @@ def apply_diff_durchen(diffs):
 
 
 def flow(target_path, source_path, text_type, image_offset):
-<<<<<<< HEAD
-    """
-    Input: target text, source text, text_type(body text or footnote) and source image offset
-    Process: Diff is computed between target and source text; footnotes and footnotes markers
-             are from diffs; they are applied to target text with markers; source image links
-             are computed and added at the end of each page.
-    Output: target text with footnotes with markers and source image links.
-    """
-    target = Path(target_path).read_text()
-    source = Path(source_path).read_text()
-
-=======
     '''
     Script flow
 
@@ -374,19 +356,20 @@ def flow(target_path, source_path, text_type, image_offset):
         - source image links are computed and added at the end of each page
     Output: target text with footnotes, with markers and with source image links
     '''
-    target = get_text(target_path)
-    source = get_text(source_path)
+    target = Path(target_path).read_text()
+    source = Path(source_path).read_text()
     
->>>>>>> ca4431620ee4bcef50d4b8dbee3c136c5a70420e
     # The volume number info is extracted from the target_path and being used to name the
     # output file.
-    vol_num = re.search("\d+", target_path)[0][1:]
+    vol_num = 74
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
         diffs = get_diff(target, source)
         result = apply_diff_body(diffs, vol_num)
         result = add_link(result, image_offset)
-        with open(f"./output/body_text/{vol_num}.txt", "w+") as f:
+        # with open(f"./output/body_text/{vol_num}.txt", "w+") as f:
+        #     f.write(result)
+        with open(f"./test/data/Reconstructor/body_text/test1result.txt", "w+") as f:
             f.write(result)
     elif text_type == "footnote":
         clean_target, clean_source = preprocess_footnote(target, source)
@@ -400,8 +383,8 @@ def flow(target_path, source_path, text_type, image_offset):
 
 
 if __name__ == "__main__":
-    target_path = "./input/body_text/cleantext/v073.txt"
-    source_path = "./input/body_text/ocred_text/v073.txt"
-    offset = 16
+    target_path = "./test/data/Reconstructor/body_text/test1clean.txt"
+    source_path = "./test/data/Reconstructor/body_text/test1namsel.txt"
+    offset = 21
     text_type = "body"
     flow(target_path, source_path, text_type, offset)
