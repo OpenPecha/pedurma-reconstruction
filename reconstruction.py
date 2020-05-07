@@ -1,5 +1,5 @@
 """
-Pedurma Footnote Reconstruction
+Pedurma Footnote Reconstruction.
 Footnote reconstruction script for the ocred katen pedurma using annotation transfer with 
 google's dmp.(https://github.com/google/diff-match-patch) 
 This script allows to transfer a specific set of annotations(footnotes and footnote markers) 
@@ -14,27 +14,34 @@ from diff_match_patch import diff_match_patch
 
 
 def preprocess_footnote(target, source):
-    """
-    Normalises edition markers to minimise noise in diffs.
-    
-    Input: target text and source text
-    Process: normalise the edition markers in the footnote
-    Output: target text and source text with same edition markers
+    """Normalises edition markers to minimise noise in diffs.
+
+    Args:
+        target (str): Target text
+        source (str): source text
+
+    Returns:
+        str: normalised target text
+        str: normalised source text
     """
     patterns = [["〈〈?", "«"], ["〉〉?", "»"], ["《", "«"], ["》", "»"]]
     clean_target = target
     clean_source = source
-    for pattern in patterns:
-        clean_target = re.sub(pattern[0], pattern[1], clean_target)
-        clean_source = re.sub(pattern[0], pattern[1], clean_source)
+    for old_pattern, std_pattern in patterns:
+        clean_target = re.sub(old_pattern, std_pattern, clean_target)
+        clean_source = re.sub(old_pattern, std_pattern, clean_source)
     return clean_target, clean_source
 
 
 def get_diff(target, source):
-    """
-    Input: target and source text (str)
-    Process: computes diff of input texts using DMP.
-    Output: returns list of cleaned diffs.
+    """Compute diff between target and source using DMP.
+
+    Args:
+        target (str): target text
+        source (str): source text
+
+    Returns:
+        list: list of diffs
     """
     dmp = diff_match_patch()
     # Diff_timeout is set to 0 inorder to compute diff till end of file.
@@ -47,11 +54,13 @@ def get_diff(target, source):
 
 
 def rm_noise(diff):
-    """
-    Filters out noise in diff.
-    Input: diff text
-    Process: removes noise
-    Output: footnote or footnote marker
+    """Filter out noise from diff text.
+
+    Args:
+        diff (str): diff text
+
+    Returns:
+        str: cleaned diff text
     """
     result = diff
     patterns = [
@@ -68,11 +77,14 @@ def rm_noise(diff):
 
 
 def get_pg_ann(diff, vol_num):
-    """
-    Input: diff and volume number
-    Process: from diff, page number pattern will be extracted ; page number will be then 
-             extraccted from the pattern; pg_annotation will be added and returned.
-    Output: page annotation <<pg_no,pg_pattern>>
+    """Add page annotion to page pattern with page number as payload.
+
+    Args:
+        diff (str): diff text
+        vol_num (int): volume number
+
+    Returns:
+        str: page annotation <<pg_num, pg_pattern>>
     """
     pg_no_pattern = f"{vol_num}\S*?(\d+)"
     pg_pat = re.search(pg_no_pattern, diff)
@@ -81,10 +93,13 @@ def get_pg_ann(diff, vol_num):
 
 
 def identify_footnote_marker(diff):
-    """
-    Input: diff
-    Process: extract footnote marker from diff
-    Output: fotenote marker
+    """Extract footnote marker from diff text.
+
+    Args:
+        diff (str): diff text
+
+    Returns:
+        str: footnote marker
     """
     result = ""
     ann_ = ""
@@ -101,13 +116,13 @@ def identify_footnote_marker(diff):
 
 
 def is_circle_number(footnote_marker):
-    """
-    This function checks whether a footnote marker is number in circle or not. If so, it will
-    return the number in circle.
-    Input: footnote marker
-    Process: checkes whether the footnote marker is number in circle or not; If so return 
-             number in circle.
-    Output: number in circle 
+    """Check whether footnote marker is number in circle or not and if so returns equivalent number.
+
+    Args:
+        footnote_marker (str): footnote marker
+
+    Returns:
+        str: number inside the circle
     """
     value = ""
     number = re.search("[\u2460-\u2469]", footnote_marker)
@@ -129,14 +144,15 @@ def is_circle_number(footnote_marker):
 
 
 def translate_tib_number(footnote_marker):
-    """
-    Input: footnote marker
-    Process: translate tibetan numerals to roman numbers and returns the result
-    Output: numbers(roman)
+    """Translate tibetan numeral in footnote marker to roman number.
+
+    Args:
+        footnote_marker (str): footnote marker
+
+    Returns:
+        str: footnote marker having numbers in roman numeral
     """
     value = ""
-    if re.search("\d+\S+(\d+)", footnote_marker):
-        return value
     tib_num = {
         "༠": "0",
         "༡": "1",
@@ -160,10 +176,13 @@ def translate_tib_number(footnote_marker):
 
 
 def get_payload(footnote_marker):
-    """
-    Input: footnote_marker
-    Process: equivalent number is computed from footnote marker and returned
-    Output: equivalent numbers from footnote marker
+    """Compute the equivalent numbers in footnote marker and return as payload.
+
+    Args:
+        footnote_marker (str): footnote marker
+
+    Returns:
+        str: numbers in footnote marker
     """
     value = ""
     if is_circle_number(footnote_marker):
@@ -176,11 +195,14 @@ def get_payload(footnote_marker):
 
 
 def apply_diff_body(diffs, vol_num):
-    """
-    Input: list of diffs
-    Process: filter the diffs; add diff markers '<diff>';
-             apply filtered diffs to target text.
-    Output: target text with transfered annotations with markers.
+    """Filter the diffs; add diff markers '<diff>';apply filtered diffs to target text.
+
+    Args:
+        diffs (list): list of diffs
+        vol_num (int): volume number
+
+    Returns:
+        str: target text with transfered annotations with markers.
     """
     result = ""
     for diff in diffs:
@@ -201,6 +223,15 @@ def apply_diff_body(diffs, vol_num):
 
 
 def add_link(text, offset):
+    """Add link of source image page.
+
+    Args:
+        text (str): target text having footnote maker transfered
+        offset (int): source image page offset
+
+    Returns:
+        str: target text with source image page link
+    """
     result = ""
     lines = text.splitlines()
     for line in lines:
