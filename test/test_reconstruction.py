@@ -1,3 +1,37 @@
-test1_google = '༡༥༤ («གཡུང་»«ལི་»«པེ་»«སྣར་«ཅོ་»«ཞོལ་»བྱུང༌། «སྣར་»«ཞོལ་»ལྷས་བྱིན། ཉི«ཅོ་»གར།\n©«གཡུང་»ལོ། «གཡུང་»«པེ་»གཅིག © «པེ་»+ལ། ༧ «སྣར་«ཞོལ་»རོ། «གཡུང་»སྨྲས།\n«པེ་»སྨྲས།'
-test1_namsel = '༡༥༤ ①«གཡུང་»«ལི་»«པེ་»«སྣར་»«ཅོ་»«ཞོལ་»བྱུང་། ②«སྣར་»«ཞོལ་»ལྷས་བྱིན། ①«ཅོ་»གར། ④«གཡུང་»བོ།\n⑤«གཡུང་»«བེ་»གཅིག ་ ༠«བེ་»་ལ། ⑦«སྣར་»«ཞོལ་»རོ། ⑧«གཡུང་»མས། «པེ་»སྨྲས།'
-test1_truth = '༡༥༤ <1,①>«གཡུང་»«ལི་»«པེ་»«སྣར་«ཅོ་»«ཞོལ་»བྱུང༌། <2,②>«སྣར་»«ཞོལ་»ལྷས་བྱིན། <1,①>«ཅོ་»གར།\n <4,④>«གཡུང་»ལོ། <5,⑤>«གཡུང་»«པེ་»གཅིག <0,༠>«པེ་»+ལ། <7,⑦>«སྣར་«ཞོལ་»རོ། <8,⑧>«གཡུང་»སྨྲས།\n«པེ་»སྨྲས།'
+import sys
+
+sys.path.append("../")
+import re
+from pathlib import Path
+
+import reconstruction
+
+
+def rm_markers_ann(text):
+    result = ""
+    lines = text.splitlines()
+    for line in lines:
+        line = re.sub("<<.+?>>", "", line)
+        line = re.sub("<.+?>", "#", line)
+        result += line + "\n"
+    return result
+
+
+def test_reconstruction():
+    target_path = "./data/Reconstructor/body_text/test1clean.txt"
+    source_path = "./data/Reconstructor/body_text/test1namsel.txt"
+    truth_path = "./data/Reconstructor/body_text/test1truth.txt"
+    vol_num = 74
+    target = Path(target_path).read_text()
+    source = Path(source_path).read_text()
+    expected = Path(truth_path).read_text()
+    diffs = reconstruction.get_diff(target, source)
+    result = reconstruction.apply_diff_body(diffs, vol_num)
+    result = rm_markers_ann(result)
+    # with open(f"./data/Reconstructor/body_text/test1result.txt", "w+") as f:
+    #     f.write(result)
+    assert result == expected, "Not match"
+
+
+if __name__ == "__main__":
+    test_reconstruction()
