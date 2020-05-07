@@ -49,6 +49,7 @@ def get_diff(target, source):
 def rm_noise(diff):
     """
     Filters out noise in diff.
+
     Input: diff text
     Process: removes noise
     Output: footnote or footnote marker
@@ -70,8 +71,10 @@ def rm_noise(diff):
 def get_pg_ann(diff, vol_num):
     """
     Input: diff and volume number
-    Process: from diff, page number pattern will be extracted ; page number will be then 
-             extraccted from the pattern; pg_annotation will be added and returned.
+    Process: 
+        - from diff, page number pattern will be extracted
+        -  page number will be then extraccted from the pattern
+        - pg_annotation will be added and returned
     Output: page annotation <<pg_no,pg_pattern>>
     """
     pg_no_pattern = f"{vol_num}\S*?(\d+)"
@@ -101,12 +104,19 @@ def identify_footnote_marker(diff):
 
 
 def is_circle_number(footnote_marker):
+<<<<<<< HEAD
     """
     This function checks whether a footnote marker is number in circle or not. If so, it will
     return the number in circle.
+=======
+    '''
+    Checks whether a footnote marker is number in circle or not, return if yes.
+
+>>>>>>> ca4431620ee4bcef50d4b8dbee3c136c5a70420e
     Input: footnote marker
-    Process: checkes whether the footnote marker is number in circle or not; If so return 
-             number in circle.
+    Process: 
+        - checks whether the footnote marker is number in circle or not
+        - if so return number in circle.
     Output: number in circle 
     """
     value = ""
@@ -178,8 +188,10 @@ def get_payload(footnote_marker):
 def apply_diff_body(diffs, vol_num):
     """
     Input: list of diffs
-    Process: filter the diffs; add diff markers '<diff>';
-             apply filtered diffs to target text.
+    Process: 
+        - filter the diffs
+        - add diff markers '<diff>'
+        - apply filtered diffs to target text
     Output: target text with transfered annotations with markers.
     """
     result = ""
@@ -339,6 +351,7 @@ def apply_diff_durchen(diffs):
 
 
 def flow(target_path, source_path, text_type, image_offset):
+<<<<<<< HEAD
     """
     Input: target text, source text, text_type(body text or footnote) and source image offset
     Process: Diff is computed between target and source text; footnotes and footnotes markers
@@ -349,6 +362,22 @@ def flow(target_path, source_path, text_type, image_offset):
     target = Path(target_path).read_text()
     source = Path(source_path).read_text()
 
+=======
+    '''
+    Script flow
+
+    Input: target text, source text, text_type(body text or footnote) and source image offset
+    Process: 
+        - diff is computed between target and source text
+        - footnotes and footnotes markers are from diffs
+        - they are applied to target text with markers
+        - source image links are computed and added at the end of each page
+    Output: target text with footnotes, with markers and with source image links
+    '''
+    target = get_text(target_path)
+    source = get_text(source_path)
+    
+>>>>>>> ca4431620ee4bcef50d4b8dbee3c136c5a70420e
     # The volume number info is extracted from the target_path and being used to name the
     # output file.
     vol_num = re.search("\d+", target_path)[0][1:]
