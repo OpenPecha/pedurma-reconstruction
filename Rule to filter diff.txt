@@ -29,3 +29,14 @@ mid syl
 noisey lone marker
     - move l.end_syl to r and change to 0
     - keep marker 
+
+Exception case:
+	- 74—297གྱིས༡་།་
+	- 0=>   མ་མོ་འཛིན་པ། 
+	  -1=>   རྩ
+	  1=>   ⑧ མ
+	  0=>   ་འཇིང་
+	- mid syl containing marker eg:
+		- 0=>   ཆུ་ར་ས
+		  1=>   ༡ས
+		  0=>   ྟོང་པ་ཅི་ཡང་མེད་པ

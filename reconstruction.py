@@ -83,24 +83,100 @@ def get_pg_ann(diff, vol_num):
     return f"<<{pg_num},{pg_pat[0]}>>"
 
 
-def identify_footnote_marker(diff):
+def get_noisy_lone_marker(left_diff, diff, right_diff):
+    if is_punct(left_diff[-1]) == False and (right_diff[0] == "་"):
+        if marker := get_abs_marker(diff):
+            return marker
+        elif marker := get_excep_marker(diff):
+            return marker
+        else:
+            return ""
+    else:
+        return ""
+
+
+def get_abs_marker(diff):
     """
     Input: diff
     Process: extract footnote marker from diff
     Output: fotenote marker
     """
-    result = ""
-    ann_ = ""
+    marker_ = ""
     patterns = [
         "[\u2460-\u2469]",
         "[\u0F20-\u0F29]+",
         "[\u0030-\u0039]+",
     ]
     for pattern in patterns:
-        ann = re.search(pattern, diff)
-        if ann:
-            ann_ += ann[0]
-    return ann_
+        if marker := re.search(pattern, diff):
+            marker_ += marker[0]
+    return marker_
+
+
+def get_excep_marker(diff):
+    """Check is diff belong to exception marker or not if so returns it.
+
+    Args:
+        diff (str): diff text
+
+    Returns:
+        str: exception marker
+    """
+    marker_ = ""
+    patterns = ["པོ་", "འི", "ཚོ་", "ད", "སུ", "རིན", "\(", "\)"]
+    for pattern in patterns:
+        marker = re.search(pattern, diff)
+        if marker := re.search(pattern, diff):
+            marker_ += marker[0]
+    return marker_
+
+
+def is_punct(char):
+    """Check whether char is tibetan punctuation or not.
+
+    Args:
+        diff (str): character from diff
+
+    Returns:
+        flag: true if char is punctuation false if not
+    """
+    if char in ["་", "།", "༔", ":", "། །"]:
+        return True
+    else:
+        return False
+
+
+def is_midsyl(left_diff, right_diff):
+    """Check whether current diff is mid syllabus or not.
+
+    Args:
+        left_diff (str): left diff text
+        right_diff (str): right diff text
+
+    Returns:
+        str: flag to indicate whether current diff is mid syllabus or not
+    """
+    flag = True
+    if is_punct(left_diff[-1]) and is_punct(right_diff[0]):
+        flag = False
+    return flag
+
+
+def get_noisy_marker(diff):
+    """Extarct marker from noisy marker.
+
+    Args:
+        diff (str): diff text
+
+    Returns:
+        str: marker
+    """
+    if marker := get_abs_marker(diff):
+        return marker
+    elif marker := get_excep_marker(diff):
+        return marker
+    else:
+        return ""
 
 
 def is_circle_number(footnote_marker):
@@ -163,7 +239,7 @@ def translate_tib_number(footnote_marker):
     return value
 
 
-def get_payload(footnote_marker):
+def get_value(footnote_marker):
     """
     Input: footnote_marker
     Process: equivalent number is computed from footnote marker and returned
@@ -189,20 +265,40 @@ def apply_diff_body(diffs, vol_num):
     Output: target text with transfered annotations with markers.
     """
     result = ""
-    for diff in diffs:
+    for i, diff in enumerate(diffs):
         if diff[0] == 0 or diff[0] == -1:  # in target not in source
             result += diff[1]
         elif diff[0] == 1:  # in source not in target
-            diff_ = rm_noise(diff[1])  # keep only footnote and footnote markers
-            if re.search(f"{vol_num}+\S+\d+", diff_):
+            if i > 0:
+                left_diff = diffs[i - 1]
+            if i < len(diffs) - 1:
+                right_diff = diffs[i + 1]
+            diff_ = rm_noise(diff[1])
+            if re.search(f"{vol_num}་?\D་?\d+", diff_):
                 result += get_pg_ann(diff_, vol_num)
-            else:
-                footnote_marker = identify_footnote_marker(diff_)  # add annotation markers
-                if footnote_marker:
-                    payload = get_payload(footnote_marker)
-                    result += f"<{payload},{footnote_marker}>"
-                elif diff_:
-                    result += f"<{diff_}>"
+                diff_ = re.sub(f"{vol_num}་?\D་?\d+", "", diff_)
+            if left_diff[0] == 0 and right_diff[0] == 0:
+                if marker := get_noisy_lone_marker(left_diff[1], diff_, right_diff[1]):
+                    if value := get_value(marker):
+                        result = f"{result[:-1]}<{value},{marker}>{left_diff[1][-1]}"
+                    else:
+                        result = f"{result[:-1]}<{marker}>{left_diff[1][-1]}"
+                elif marker := get_abs_marker(diff_):
+                    value = get_value(marker)
+                    result += f"<{value},{marker}>"
+                elif marker := get_excep_marker(diff_):
+                    result += f"<{marker}>"
+                # elif is_midsyl(left_diff[1], right_diff[1]):
+                #     result += "cor"
+            elif left_diff[0] == -1:
+                # if is_midsyl(left_diff[1], right_diff[1]):
+                #     result += "cor"
+                if marker := get_noisy_marker(diff_):
+                    if value := get_value(marker):
+                        result = f"{result[:-len(left_diff[1])]}<{value},{marker}>{left_diff[1]}"
+                    else:
+                        result = f"{result[:-len(left_diff[1])]}<{marker}>{left_diff[1]}"
+
     return result
 
 
@@ -345,7 +441,7 @@ def apply_diff_durchen(diffs):
 
 
 def flow(target_path, source_path, text_type, image_offset):
-    '''
+    """
     Script flow
 
     Input: target text, source text, text_type(body text or footnote) and source image offset
@@ -355,10 +451,10 @@ def flow(target_path, source_path, text_type, image_offset):
         - they are applied to target text with markers
         - source image links are computed and added at the end of each page
     Output: target text with footnotes, with markers and with source image links
-    '''
+    """
     target = Path(target_path).read_text()
     source = Path(source_path).read_text()
-    
+
     # The volume number info is extracted from the target_path and being used to name the
     # output file.
     vol_num = 74
@@ -366,10 +462,10 @@ def flow(target_path, source_path, text_type, image_offset):
     if text_type == "body":
         diffs = get_diff(target, source)
         result = apply_diff_body(diffs, vol_num)
-        result = add_link(result, image_offset)
+        # result = add_link(result, image_offset)
         # with open(f"./output/body_text/{vol_num}.txt", "w+") as f:
         #     f.write(result)
-        with open(f"./test/data/Reconstructor/body_text/test1result.txt", "w+") as f:
+        with open(f"./test/data/Reconstructor/body_text/test2result.txt", "w+") as f:
             f.write(result)
     elif text_type == "footnote":
         clean_target, clean_source = preprocess_footnote(target, source)
