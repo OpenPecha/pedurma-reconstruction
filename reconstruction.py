@@ -11,40 +11,40 @@ text B.
 """
 import re
 from pathlib import Path
-
+import yaml
 from diff_match_patch import diff_match_patch
 
 
-def preprocess_footnote(target, source):
+def preprocess_footnote(B, A):
     """
     Normalises edition markers to minimise noise in diffs.
     
-    Input: target text and source text
+    Input: B text and A text
     Process: normalise the edition markers in the footnote
-    Output: target text and source text with same edition markers
+    Output: B text and A text with same edition markers
     """
     patterns = [["〈〈?", "«"], ["〉〉?", "»"], ["《", "«"], ["》", "»"]]
-    clean_target = target
-    clean_source = source
+    clean_B = B
+    clean_A = A
     for pattern in patterns:
-        clean_target = re.sub(pattern[0], pattern[1], clean_target)
-        clean_source = re.sub(pattern[0], pattern[1], clean_source)
-    return clean_target, clean_source
+        clean_B = re.sub(pattern[0], pattern[1], clean_B)
+        clean_A = re.sub(pattern[0], pattern[1], clean_A)
+    return clean_B, clean_A
 
 
-def get_diff(target, source):
+def get_diff(B, A):
     """
-    Input: target and source text (str)
+    Input: B and A text (str)
     Process: computes diff of input texts using DMP.
     Output: returns list of cleaned diffs.
     """
     dmp = diff_match_patch()
     # Diff_timeout is set to 0 inorder to compute diff till end of file.
     dmp.Diff_Timeout = 0
-    diffs = dmp.diff_main(target, source)
+    diffs = dmp.diff_main(B, A)
     # beautifies the diff list
     dmp.diff_cleanupSemantic(diffs)
-    print(" Diff computation done!!!")
+    print("Diff computation done.")
     return diffs
 
 
@@ -263,14 +263,16 @@ def apply_diff_body(diffs, vol_num):
     Process: 
         - filter the diffs
         - add diff markers '<diff>'
-        - apply filtered diffs to target text
-    Output: target text with transfered annotations with markers.
+        - apply filtered diffs to B text
+    Output: B text with transfered annotations with markers.
     """
     result = ""
+    left_diff = [0]
+    right_diff = [0]
     for i, diff in enumerate(diffs):
-        if diff[0] == 0 or diff[0] == -1:  # in target not in source
+        if diff[0] == 0 or diff[0] == -1:  # in B not in A
             result += diff[1]
-        elif diff[0] == 1:  # in source not in target
+        elif diff[0] == 1:  # in A not in B
             if i > 0:
                 left_diff = diffs[i - 1]
             if i < len(diffs) - 1:
@@ -450,38 +452,40 @@ def apply_diff_durchen(diffs):
     return result
 
 
-def flow(target_path, source_path, text_type, image_offset):
+def flow(B_path, A_path, text_type, image_location):
     """
     Script flow
 
-    Input: target text, source text, text_type(body text or footnote) and source image offset
+    Input: B text, A text, text_type(body text or footnote) and A image offset
     Process: 
-        - diff is computed between target and source text
-        - footnotes and footnotes markers are from diffs
-        - they are applied to target text with markers
-        - source image links are computed and added at the end of each page
-    Output: target text with footnotes, with markers and with source image links
+        - diff is computed between B and A text
+        - footnotes and footnotes markers are filtered from diffs
+        - they are applied to B text with markers
+        - A image links are computed and added at the end of each page
+    Output: B text with footnotes, with markers and with A image links
     """
-    target = Path(target_path).read_text()
-    source = Path(source_path).read_text()
+    B = B_path.read_text(encoding='utf-8')
+    A = A_path.read_text(encoding='utf-8')
 
-    # The volume number info is extracted from the target_path and being used to name the
+    # The volume number info is extracted from the B_path and being used to name the
     # output file.
     vol_num = 74
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
-        diffs = get_diff(target, source)
+        diffs = get_diff(B, A)
+        diffsList = list(map(list, diffs))
+        diffsYaml = yaml.dump(diffsList, allow_unicode=True)
+        (basePath / "diffs.yaml").write_text(diffsYaml, encoding='utf-8')
         result = apply_diff_body(diffs, vol_num)
         # result = add_link(result, image_offset)
         # with open(f"./output/body_text/{vol_num}.txt", "w+") as f:
         #     f.write(result)
-        with open(f"./test/data/Reconstructor/body_text/test2result.txt", "w+") as f:
-            f.write(result)
+        (basePath / "result.txt").write_text(encoding='utf-8')
     elif text_type == "footnote":
-        clean_target, clean_source = preprocess_footnote(target, source)
-        diffs = get_diff(clean_target, clean_source)
+        clean_B, clean_A = preprocess_footnote(B, A)
+        diffs = get_diff(clean_B, clean_A)
         result = apply_diff_footnote(diffs)
-        with open(f"./footnote/footnote_{vol_num}.txt", "w+") as f:
+        with open(f"./footnote/footnote_{vol_num}.txt", "w+", encoding='utf-8') as f:
             f.write(result)
     else:
         print("Type not found")
@@ -489,8 +493,9 @@ def flow(target_path, source_path, text_type, image_offset):
 
 
 if __name__ == "__main__":
-    target_path = "./test/data/Reconstructor/body_text/test1clean.txt"      # 
-    source_path = "./test/data/Reconstructor/body_text/test1namsel.txt"
+    basePath = Path("./tests/test1")
+    A_path = basePath / 'input' / 'a.txt'
+    B_path = basePath / 'input' / 'b.txt'
     
     # only works text by text or note by note for now
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
@@ -498,4 +503,4 @@ if __name__ == "__main__":
 
     text_type = "body"
 
-    flow(target_path, source_path, text_type, image_location)
+    flow(B_path, A_path, text_type, image_location)
