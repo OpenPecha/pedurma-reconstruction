@@ -1,3 +1,5 @@
+
+
 """
 Pedurma Footnote Reconstruction
 Footnote reconstruction script for the ocred katen pedurma using annotation transfer with 
@@ -302,10 +304,18 @@ def apply_diff_body(diffs, vol_num):
     return result
 
 
-def add_link(text, offset):
+def add_link(text, image_location):
     result = ""
+
+    work = image_location[0]
+    vol = image_location[1]
+    pref = f'I{work[1:-3]}'
+    igroup = f'{pref}{783+vol}' if work == "W1PD96682" else f'{pref}{845+vol}'
+    offset = image_location[2]
+
     lines = text.splitlines()
     for line in lines:
+        # detect page numbers and convert to image url
         if re.search("<<\d+,\d+\S+\d+>>", line):
             pg_no = re.search("<<(\d+),(\d+\S+\d+)>>", line)
             if re.search("[\u0030-\u0039]", pg_no.group(2)):
@@ -313,7 +323,7 @@ def add_link(text, offset):
                     pg_no = int(pg_no.group(1)[:3]) + offset
                 else:
                     pg_no = int(pg_no.group(1)) + offset
-                link = f"[https://www.tbrc.org/browser/ImageService?work=W1PD96682&igroup=I1PD96856&image={pg_no}&first=1&last=862&fetchimg=yes]"
+                link = f"[https://www.tbrc.org/browser/ImageService?work={work}&igroup={igroup}&image={pg_no}&first=1&last=2000&fetchimg=yes]"
                 result += line + "\n" + link + "\n"
             else:
                 result += line + "\n"
@@ -479,8 +489,13 @@ def flow(target_path, source_path, text_type, image_offset):
 
 
 if __name__ == "__main__":
-    target_path = "./test/data/Reconstructor/body_text/test1clean.txt"
+    target_path = "./test/data/Reconstructor/body_text/test1clean.txt"      # 
     source_path = "./test/data/Reconstructor/body_text/test1namsel.txt"
-    offset = 21
+    
+    # only works text by text or note by note for now
+    # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
+    image_location = ["W1PD96682", 73, 21]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
+
     text_type = "body"
-    flow(target_path, source_path, text_type, offset)
+
+    flow(target_path, source_path, text_type, image_location)
