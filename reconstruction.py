@@ -494,7 +494,8 @@ def flow(B_path, A_path, text_type, image_info):
 
 
 if __name__ == "__main__":
-    basePath = Path("./tests/test1")
+
+    basePath = Path("./tests/test2")
     A_path = basePath / 'input' / 'a.txt'
     B_path = basePath / 'input' / 'b.txt'
     
