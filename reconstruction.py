@@ -257,7 +257,7 @@ def get_value(footnote_marker):
     return value
 
 
-def apply_diff_body(diffs, vol_num):
+def apply_diff_body(diffs, image_info):
     """
     Input: list of diffs
     Process: 
@@ -266,6 +266,7 @@ def apply_diff_body(diffs, vol_num):
         - apply filtered diffs to B text
     Output: B text with transfered annotations with markers.
     """
+    vol_num = image_info[1]
     result = ""
     left_diff = [0]
     right_diff = [0]
@@ -306,14 +307,14 @@ def apply_diff_body(diffs, vol_num):
     return result
 
 
-def add_link(text, image_location):
+def add_link(text, image_info):
     result = ""
 
-    work = image_location[0]
-    vol = image_location[1]
+    work = image_info[0]
+    vol = image_info[1]
     pref = f'I{work[1:-3]}'
     igroup = f'{pref}{783+vol}' if work == "W1PD96682" else f'{pref}{845+vol}'
-    offset = image_location[2]
+    offset = image_info[2]
 
     lines = text.splitlines()
     for line in lines:
@@ -335,6 +336,7 @@ def add_link(text, image_location):
 
 
 def get_addition_footnote(diff):
+
     value = diff_cleaner(diff)
     result = ""
     ann_ = ""
@@ -362,6 +364,7 @@ def get_addition_footnote(diff):
 
 
 def is_subtract(diff):
+    # needs revision
     flag = False
     patterns = [
         "©",
@@ -401,10 +404,8 @@ def is_note(diff):
 
 def reformat_footnote(text):
     """Replace edition name with their respective unique id and brings every footnote to newline.
-
-    Args:
+    Input:
         text (str): google OCRed footnote with namsel footnote markers transfered.
-
     Returns:
         (str): reformatted footnote
     """
@@ -426,6 +427,7 @@ def reformat_footnote(text):
 
 
 def apply_diff_durchen(diffs):
+    # TODO: needs revision
     result = ""
     for diff in diffs:
         if diff[0] == 0:
@@ -452,7 +454,7 @@ def apply_diff_durchen(diffs):
     return result
 
 
-def flow(B_path, A_path, text_type, image_location):
+def flow(B_path, A_path, text_type, image_info):
     """
     Script flow
 
@@ -467,16 +469,15 @@ def flow(B_path, A_path, text_type, image_location):
     B = B_path.read_text(encoding='utf-8')
     A = A_path.read_text(encoding='utf-8')
 
-    # The volume number info is extracted from the B_path and being used to name the
-    # output file.
-    vol_num = 74
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
         diffs = get_diff(B, A)
         diffsList = list(map(list, diffs))
         diffsYaml = yaml.dump(diffsList, allow_unicode=True)
-        (basePath / "diffs.yaml").write_text(diffsYaml, encoding='utf-8')
-        result = apply_diff_body(diffs, vol_num)
+        diffsYamlPath = basePath / "diffs.yaml"
+        diffsYamlPath.write_text(diffsYaml, encoding='utf-8')
+        filteredDiffs = filterDiffs(diffsYamlPath, "body")
+        newText = apply_diff_body(diffs, image_info)
         # result = add_link(result, image_offset)
         # with open(f"./output/body_text/{vol_num}.txt", "w+") as f:
         #     f.write(result)
@@ -499,8 +500,8 @@ if __name__ == "__main__":
     
     # only works text by text or note by note for now
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
-    image_location = ["W1PD96682", 73, 21]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
+    image_info = ["W1PD96682", 73, 21]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
     text_type = "body"
 
-    flow(B_path, A_path, text_type, image_location)
+    flow(B_path, A_path, text_type, image_info)
