@@ -7,7 +7,8 @@ def derge_page_increment(p_num):
     page, side = int(p_num[1:-2]), p_num[-2:-1]
 
     # increment
-    page += 1
+    if side == 'b':
+        page += 1
     side = sides[side]
 
     return f'[{page}{side}]'
