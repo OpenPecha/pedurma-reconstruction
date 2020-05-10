@@ -454,6 +454,21 @@ def apply_diff_durchen(diffs):
     return result
 
 
+def filterDiffs(diffsYamlPath, type):
+    """
+    TODO:
+
+    Create functions for each type of filtering rule.
+    rules should edit the diff list and the 0/1/-1 values 
+    
+    """
+    diffs = yaml.load(diffsYamlPath.read_text(encoding='utf-8'))
+
+    filterDiffs = diffs
+
+    return filterDiffs
+
+
 def flow(B_path, A_path, text_type, image_info):
     """
     Script flow
