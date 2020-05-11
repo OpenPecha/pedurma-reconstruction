@@ -1,5 +1,3 @@
-
-
 """
 Pedurma Footnote Reconstruction
 Footnote reconstruction script for the ocred katen pedurma using annotation transfer with 
@@ -268,12 +266,12 @@ def apply_diff_body(diffs, image_info):
     """
     vol_num = image_info[1]
     result = ""
-    left_diff = [0]
-    right_diff = [0]
     for i, diff in enumerate(diffs):
-        if diff[0] == 0 or diff[0] == -1:  # in B not in A
+        if diff[0] == 0 or diff[0] == 1:  # in B not in A
             result += diff[1]
-        elif diff[0] == 1:  # in A not in B
+        elif diff[0] == -1:  # in A not in B
+            if diff[1] == "(༦)ཅི་(༧ད":
+                print("here")
             if i > 0:
                 left_diff = diffs[i - 1]
             if i < len(diffs) - 1:
@@ -295,14 +293,14 @@ def apply_diff_body(diffs, image_info):
                     result += f"<{marker}>"
                 # elif is_midsyl(left_diff[1], right_diff[1]):
                 #     result += "cor"
-            elif left_diff[0] == -1:
+            elif right_diff[0] == 1:
                 # if is_midsyl(left_diff[1], right_diff[1]):
                 #     result += "cor"
                 if marker := get_noisy_marker(diff_):
                     if value := get_value(marker):
-                        result = f"{result[:-len(left_diff[1])]}<{value},{marker}>{left_diff[1]}"
+                        result += f"<{value},{marker}>"
                     else:
-                        result = f"{result[:-len(left_diff[1])]}<{marker}>{left_diff[1]}"
+                        result += f"<{marker}>"
 
     return result
 
@@ -312,8 +310,8 @@ def add_link(text, image_info):
 
     work = image_info[0]
     vol = image_info[1]
-    pref = f'I{work[1:-3]}'
-    igroup = f'{pref}{783+vol}' if work == "W1PD96682" else f'{pref}{845+vol}'
+    pref = f"I{work[1:-3]}"
+    igroup = f"{pref}{783+vol}" if work == "W1PD96682" else f"{pref}{845+vol}"
     offset = image_info[2]
 
     lines = text.splitlines()
@@ -462,7 +460,7 @@ def filterDiffs(diffsYamlPath, type):
     rules should edit the diff list and the 0/1/-1 values 
     
     """
-    diffs = yaml.load(diffsYamlPath.read_text(encoding='utf-8'))
+    diffs = yaml.load(diffsYamlPath.read_text(encoding="utf-8"))
 
     filterDiffs = diffs
 
@@ -481,8 +479,8 @@ def flow(B_path, A_path, text_type, image_info):
         - A image links are computed and added at the end of each page
     Output: B text with footnotes, with markers and with A image links
     """
-    B = B_path.read_text(encoding='utf-8')
-    A = A_path.read_text(encoding='utf-8')
+    B = B_path.read_text(encoding="utf-8")
+    A = A_path.read_text(encoding="utf-8")
 
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
@@ -490,18 +488,18 @@ def flow(B_path, A_path, text_type, image_info):
         diffsList = list(map(list, diffs))
         diffsYaml = yaml.dump(diffsList, allow_unicode=True)
         diffsYamlPath = basePath / "diffs.yaml"
-        diffsYamlPath.write_text(diffsYaml, encoding='utf-8')
+        diffsYamlPath.write_text(diffsYaml, encoding="utf-8")
         filteredDiffs = filterDiffs(diffsYamlPath, "body")
         newText = apply_diff_body(diffs, image_info)
         # result = add_link(result, image_offset)
         # with open(f"./output/body_text/{vol_num}.txt", "w+") as f:
         #     f.write(result)
-        (basePath / "result.txt").write_text(encoding='utf-8')
+        (basePath / "result.txt").write_text(newText, encoding="utf-8")
     elif text_type == "footnote":
         clean_B, clean_A = preprocess_footnote(B, A)
         diffs = get_diff(clean_B, clean_A)
         result = apply_diff_footnote(diffs)
-        with open(f"./footnote/footnote_{vol_num}.txt", "w+", encoding='utf-8') as f:
+        with open(f"./footnote/footnote_{vol_num}.txt", "w+", encoding="utf-8") as f:
             f.write(result)
     else:
         print("Type not found")
@@ -511,12 +509,16 @@ def flow(B_path, A_path, text_type, image_info):
 if __name__ == "__main__":
 
     basePath = Path("./tests/test2")
-    A_path = basePath / 'input' / 'a.txt'
-    B_path = basePath / 'input' / 'b.txt'
-    
+    A_path = basePath / "input" / "a.txt"
+    B_path = basePath / "input" / "b.txt"
+
     # only works text by text or note by note for now
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
-    image_info = ["W1PD96682", 73, 21]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
+    image_info = [
+        "W1PD96682",
+        74,
+        21,
+    ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
     text_type = "body"
 
