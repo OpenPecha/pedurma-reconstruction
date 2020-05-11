@@ -16,7 +16,7 @@ from diff_match_patch import diff_match_patch
 def preprocess_footnote(B, A):
     """
     Normalises edition markers to minimise noise in diffs.
-    
+
     Input: B text and A text
     Process: normalise the edition markers in the footnote
     Output: B text and A text with same edition markers
@@ -85,9 +85,11 @@ def get_pg_ann(diff, vol_num):
 
 def get_noisy_lone_marker(left_diff, diff, right_diff):
     if is_punct(left_diff[-1]) == False and (right_diff[0] == "་"):
-        if marker := get_abs_marker(diff):
+        if marker:
+            = get_abs_marker(diff):
             return marker
-        elif marker := get_excep_marker(diff):
+        elif marker:
+            = get_excep_marker(diff):
             return marker
         else:
             return ""
@@ -108,7 +110,8 @@ def get_abs_marker(diff):
         "[\u0030-\u0039]+",
     ]
     for pattern in patterns:
-        if marker := re.search(pattern, diff):
+        if marker:
+            = re.search(pattern, diff):
             marker_ += marker[0]
     return marker_
 
@@ -126,7 +129,8 @@ def get_excep_marker(diff):
     patterns = ["པོ་", "འི", "ཚོ་", "ད", "སུ", "རིན", "\(", "\)"]
     for pattern in patterns:
         marker = re.search(pattern, diff)
-        if marker := re.search(pattern, diff):
+        if marker:
+            = re.search(pattern, diff):
             marker_ += marker[0]
     return marker_
 
@@ -171,9 +175,11 @@ def get_noisy_marker(diff):
     Returns:
         str: marker
     """
-    if marker := get_abs_marker(diff):
+    if marker:
+        = get_abs_marker(diff):
         return marker
-    elif marker := get_excep_marker(diff):
+    elif marker:
+        = get_excep_marker(diff):
         return marker
     else:
         return ""
@@ -281,23 +287,29 @@ def apply_diff_body(diffs, image_info):
                 result += get_pg_ann(diff_, vol_num)
                 diff_ = re.sub(f"{vol_num}་?\D་?\d+", "", diff_)
             if left_diff[0] == 0 and right_diff[0] == 0:
-                if marker := get_noisy_lone_marker(left_diff[1], diff_, right_diff[1]):
-                    if value := get_value(marker):
+                if marker:
+                    = get_noisy_lone_marker(left_diff[1], diff_, right_diff[1]):
+                    if value:
+                        = get_value(marker):
                         result = f"{result[:-1]}<{value},{marker}>{left_diff[1][-1]}"
                     else:
                         result = f"{result[:-1]}<{marker}>{left_diff[1][-1]}"
-                elif marker := get_abs_marker(diff_):
+                elif marker:
+                    = get_abs_marker(diff_):
                     value = get_value(marker)
                     result += f"<{value},{marker}>"
-                elif marker := get_excep_marker(diff_):
+                elif marker:
+                    = get_excep_marker(diff_):
                     result += f"<{marker}>"
                 # elif is_midsyl(left_diff[1], right_diff[1]):
                 #     result += "cor"
             elif right_diff[0] == 1:
                 # if is_midsyl(left_diff[1], right_diff[1]):
                 #     result += "cor"
-                if marker := get_noisy_marker(diff_):
-                    if value := get_value(marker):
+                if marker:
+                    = get_noisy_marker(diff_):
+                    if value:
+                        = get_value(marker):
                         result += f"<{value},{marker}>"
                     else:
                         result += f"<{marker}>"
@@ -338,7 +350,8 @@ def get_addition_footnote(diff):
     value = diff_cleaner(diff)
     result = ""
     ann_ = ""
-    patterns = ["[\u2460-\u2469]", "[\u0F20-\u0F29]+", "\)", "\(", "\d+", "\d+\S+\d+"]
+    patterns = ["[\u2460-\u2469]", "[\u0F20-\u0F29]+",
+                "\)", "\(", "\d+", "\d+\S+\d+"]
     for pattern in patterns:
         ann = re.search(pattern, value)
         if ann:
@@ -350,7 +363,8 @@ def get_addition_footnote(diff):
         cir_num = re.search("(>|་)[\u2460-\u2469]", result)
         if cir_num:
             cpl = get_payload(cir_num[0][1:])
-            result = re.sub("[\u2460-\u2469]", f"<{cpl},{cir_num[0][1:]}>", result, 1)
+            result = re.sub("[\u2460-\u2469]",
+                            f"<{cpl},{cir_num[0][1:]}>", result, 1)
         pg = re.search("»\d+,(74\S*?\d+)", result)
         if pg:
             ppl = get_payload(pg[0][1:])
@@ -458,7 +472,7 @@ def filterDiffs(diffsYamlPath, type):
 
     Create functions for each type of filtering rule.
     rules should edit the diff list and the 0/1/-1 values 
-    
+
     """
     diffs = yaml.load(diffsYamlPath.read_text(encoding="utf-8"))
 
@@ -484,8 +498,10 @@ def flow(B_path, A_path, text_type, image_info):
 
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
+        print('Calculating diffs...')
         diffs = get_diff(B, A)
         diffsList = list(map(list, diffs))
+        print('Dumping diffs...')
         diffsYaml = yaml.dump(diffsList, allow_unicode=True)
         diffsYamlPath = basePath / "diffs.yaml"
         diffsYamlPath.write_text(diffsYaml, encoding="utf-8")
@@ -508,16 +524,20 @@ def flow(B_path, A_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    basePath = Path("./tests/test2")
-    A_path = basePath / "input" / "a.txt"
-    B_path = basePath / "input" / "b.txt"
+    # basePath = Path("./tests/test2")
+    # A_path = basePath / "input" / "a.txt"
+    # B_path = basePath / "input" / "b.txt"
+
+    basePath = Path("./input/body_text")
+    A_path = basePath / "input" / "83A.txt"
+    B_path = basePath / "input" / "83B.txt"
 
     # only works text by text or note by note for now
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
     image_info = [
         "W1PD96682",
         74,
-        21,
+        83,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
     text_type = "body"
