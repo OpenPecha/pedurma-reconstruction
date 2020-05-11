@@ -462,7 +462,7 @@ def filterDiffs(diffsYamlPath, type):
     rules should edit the diff list and the 0/1/-1 values 
 
     """
-    diffs = yaml.load(diffsYamlPath.read_text(encoding="utf-8"))
+    diffs = yaml.safe_load(diffsYamlPath.read_text(encoding="utf-8"))
 
     filterDiffs = diffs
 
@@ -490,12 +490,12 @@ def flow(B_path, A_path, text_type, image_info):
         diffs = get_diff(B, A)
         diffsList = list(map(list, diffs))
         print("Dumping diffs...")
-        diffsYaml = yaml.dump(diffsList, allow_unicode=True)
+        diffsYaml = yaml.safe_dump(diffsList, allow_unicode=True)
         diffsYamlPath = basePath / "diffs.yaml"
         diffsYamlPath.write_text(diffsYaml, encoding="utf-8")
         filteredDiffs = filterDiffs(diffsYamlPath, "body")
         newText = apply_diff_body(diffs, image_info)
-        # result = add_link(result, image_offset)
+        newText = add_link(newText, image_info)
         # with open(f"./output/body_text/{vol_num}.txt", "w+") as f:
         #     f.write(result)
         (basePath / "result.txt").write_text(newText, encoding="utf-8")
