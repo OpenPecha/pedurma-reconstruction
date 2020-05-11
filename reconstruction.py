@@ -85,11 +85,9 @@ def get_pg_ann(diff, vol_num):
 
 def get_noisy_lone_marker(left_diff, diff, right_diff):
     if is_punct(left_diff[-1]) == False and (right_diff[0] == "་"):
-        if marker:
-            = get_abs_marker(diff):
+        if marker:= get_abs_marker(diff):
             return marker
-        elif marker:
-            = get_excep_marker(diff):
+        elif marker:= get_excep_marker(diff):
             return marker
         else:
             return ""
@@ -110,8 +108,7 @@ def get_abs_marker(diff):
         "[\u0030-\u0039]+",
     ]
     for pattern in patterns:
-        if marker:
-            = re.search(pattern, diff):
+        if marker:= re.search(pattern, diff):
             marker_ += marker[0]
     return marker_
 
@@ -129,8 +126,7 @@ def get_excep_marker(diff):
     patterns = ["པོ་", "འི", "ཚོ་", "ད", "སུ", "རིན", "\(", "\)"]
     for pattern in patterns:
         marker = re.search(pattern, diff)
-        if marker:
-            = re.search(pattern, diff):
+        if marker:= re.search(pattern, diff):
             marker_ += marker[0]
     return marker_
 
@@ -175,11 +171,9 @@ def get_noisy_marker(diff):
     Returns:
         str: marker
     """
-    if marker:
-        = get_abs_marker(diff):
+    if marker:= get_abs_marker(diff):
         return marker
-    elif marker:
-        = get_excep_marker(diff):
+    elif marker:= get_excep_marker(diff):
         return marker
     else:
         return ""
@@ -287,29 +281,23 @@ def apply_diff_body(diffs, image_info):
                 result += get_pg_ann(diff_, vol_num)
                 diff_ = re.sub(f"{vol_num}་?\D་?\d+", "", diff_)
             if left_diff[0] == 0 and right_diff[0] == 0:
-                if marker:
-                    = get_noisy_lone_marker(left_diff[1], diff_, right_diff[1]):
-                    if value:
-                        = get_value(marker):
+                if marker:= get_noisy_lone_marker(left_diff[1], diff_, right_diff[1]):
+                    if value:= get_value(marker):
                         result = f"{result[:-1]}<{value},{marker}>{left_diff[1][-1]}"
                     else:
                         result = f"{result[:-1]}<{marker}>{left_diff[1][-1]}"
-                elif marker:
-                    = get_abs_marker(diff_):
+                elif marker:= get_abs_marker(diff_):
                     value = get_value(marker)
                     result += f"<{value},{marker}>"
-                elif marker:
-                    = get_excep_marker(diff_):
+                elif marker:= get_excep_marker(diff_):
                     result += f"<{marker}>"
                 # elif is_midsyl(left_diff[1], right_diff[1]):
                 #     result += "cor"
             elif right_diff[0] == 1:
                 # if is_midsyl(left_diff[1], right_diff[1]):
                 #     result += "cor"
-                if marker:
-                    = get_noisy_marker(diff_):
-                    if value:
-                        = get_value(marker):
+                if marker:= get_noisy_marker(diff_):
+                    if value:= get_value(marker):
                         result += f"<{value},{marker}>"
                     else:
                         result += f"<{marker}>"
