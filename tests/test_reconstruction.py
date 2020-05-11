@@ -42,18 +42,23 @@ def test_reconstruction():
     """Test for reconstruction.
 
     """
-    target_path = "./data/Reconstructor/body_text/test1clean.txt"
-    source_path = "./data/Reconstructor/body_text/test1namsel.txt"
-    truth_path = "./data/Reconstructor/body_text/test1truth.txt"
-    vol_num = 74
+    basePath = Path("./test1/")
+    target_path = basePath / "input" / "a.txt"
+    source_path = basePath / "input" / "b.txt"
+    truth_path = basePath / "test1truth.txt"
+    image_info = [
+        "W1PD96682",
+        74,
+        21,
+    ]
     target = Path(target_path).read_text()
     source = Path(source_path).read_text()
     expected = Path(truth_path).read_text()
-    diffs = reconstruction.get_diff(target, source)
-    write_diffs(diffs)
-    result = reconstruction.apply_diff_body(diffs, vol_num)
+    diffs = reconstruction.get_diff(source, target)
+    # write_diffs(diffs)
+    result = reconstruction.apply_diff_body(diffs, image_info)
     result = rm_markers_ann(result)
-    with open(f"./data/Reconstructor/body_text/test2result.txt", "w+") as f:
+    with open(f"./test1/output/result.txt", "w+") as f:
         f.write(result)
     # assert result == expected, "Not match"
 
