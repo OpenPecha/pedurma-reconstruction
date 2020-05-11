@@ -23,47 +23,74 @@ def preprocessGoogleNotes(filename):
     text = filename.read_text(encoding='utf-8')
 
     patterns = [
+        # delete tibetan numbers
+        # ['[༠-༩]', ''],
         # normalize punct
+        ['\r', '\n'],
         ['༑', '།'],
+        ['།།', '། །'],
+        ['།་', '། '],
+        # ['ག་', 'ག '],   # »-ཅག་༧ »གཞག་༡9 TODO
         ['\s+', ' '],
+        ['།\s།\s*\n', '།\n'],
+        ['།\s།\s«', '། «'],
         ['༌', '་'],      # normalize NB tsek
-        ['།\s*།', '།'],
         ['ག\s*།', 'ག'],
         ['་\s*', '་'],
         ['་\s*', '་'],
         ['་\s*\n', '་'],
         ['་+', '་'],
+        # 
+        ['([^+\s་ཀ-ྼ])། ', '\g<1>?། '],   # ༧། TODO
+        # tag pedurma page numbers #<vol-page>#
+        ['([0-9]{1,3})\D་?([0-9]+)', '\n#\g<1>-\g<2>#\n'],    # well formated
+        ['([^\d#-])([0-9]{3,10})', '\g<1>\n#\g<2>#\n'],    # not well formated
+        # headers ++<header>++
+        ['#\n(.+?)«', '#\n++\g<1>\n++«'],
         # special notes
-        ['\(?(པོད་འདིའི་ནང་.+?\))', '\n{\g<1>}'],
-        # delete tibetan numbers
-        ['[༠-༩]', ''],
-        # normalize edition marks
+        ['\(?(པོད་འདིའི་ནང་.+?)\)\s*', '\n{\g<1>}\n'],
+        ['(\{[^\}]+?) (.+?\})', '\g<1>_\g<2>'],     # deal with spaces in special notes
+        ['(\{[^\}]+?) (.+?\})', '\g<1>_\g<2>'],     # deal with spaces in special notes
+        ['(\{[^\}]+?) (.+?\})', '\g<1>_\g<2>'],     # deal with spaces in special notes
+        # normalize edition marks «<edition>»
         ['〈〈?', '«'],      
         ['〉〉?', '»'], 
         ['《', '«'], 
         ['》', '»'],
+        ['([ཀགཤ།]) །«', '\g<1> «'],
+        ['([ཀགཤ།])་?«', '\g<1> «'],
+        ['»\s+', '»'],
         ['«\s+«', '«'],
-        ['»\s+»', '»'],
+        ['»+', '»'],
         ['[=—]', '-'],
         ['\s+-', '-'],
         ['\s+\+', '+'],
         ['»\s+«', '»«'],
+        # add missing markers
         [' ([^«]+»)', ' «\g<1>'],
         ['([^»]+«) ', '\g<1>» '],
         ['([^»]+«)-', '\g<1>»-'],
-        
-        # clean up note markers
-        ['[༑།] [^།»\}]+«', '།\n\t«'],  # to clean up the google notes ocr
-        ['ག [^།»\}]+«', 'ག\n\t«'],  # to clean up the google notes ocr
-        ['ཀ [^།»\}]+«', 'ཀ\n\t«'],  # to clean up the google notes ocr
-        ['ཤ [^།»\}]+«', 'ཤ\n\t«'],  # to clean up the google notes ocr
-        [' [^ༀ-࿚]«', '\n\t«'],  # catch ། @ «
+        ['(«[^་]+?་)([^»])', '\g<1>»\g<2>'],
+        # tag note markers \<<note>\>
+        ['། ([^།»\}]+)«', '།\n<\g<1>>«'],
+        ['<\n(\{.+?)>«', '\g<1>«'],     # fix special note markers
+        ['ག ([^།»\{\}]+)«', 'ག\n<\g<1>>«'],
+        ['ཀ ([^།»\{\}]+)«', 'ཀ\n<\g<1>>«'],
+        ['ཤ ([^།»\{\}]+)«', 'ཤ\n<\g<1>>«'],
+        # [' ([^ༀ-࿚]+)«', '\n<\g<1>>«'],  # catch ། @ «
+        # delete note markers
+        # ['<', ''],
+
         ['»\n', '»'],  # to put all the notes split on two lines on a single one
+        ['། །\n', '།\n'],
         ]
 
     for p in patterns:
         text = re.sub(p[0], p[1], text)
     return text
+'''
+»འཁྲང་། ༄༅། «གཡུང་»
+'''
 
 def process(dump, page_num):
 
