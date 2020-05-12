@@ -6,6 +6,11 @@ This script allows to transfer a specific set of annotations(footnotes and footn
 from text A(OCRed etext) to text B(clean etext). We first compute a diff between  texts 
 A and B, then filter the annotations(dmp diffs) we want to transfer and then apply them to 
 text B.
+
+Tibetan alphabet:
+- 
+
+
 """
 import re
 from pathlib import Path
@@ -512,7 +517,7 @@ def flow(B_path, A_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    basePath = Path("./tests/test2")
+    basePath = Path("./tests/test4")
     A_path = basePath / "input" / "a.txt"
     B_path = basePath / "input" / "b.txt"
 

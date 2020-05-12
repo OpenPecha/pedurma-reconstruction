@@ -3,6 +3,7 @@ Rule to filter diff
 - if 1 => keep
 - if -1 and r == 0 and l == 0 => is candidate
     - if r.start and l.end are not punct => is midsyl
+        - if has number or ) => is midsyl marker
     - if has \d+་?\D་?\d+ => tag as page annotation
     - if has number or ) => is marker
     - if is patterns* => is marker
