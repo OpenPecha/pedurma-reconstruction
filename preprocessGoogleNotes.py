@@ -74,9 +74,9 @@ def preprocessGoogleNotes(filename):
         # tag note markers \<<note>\>
         ['། ([^།»\}]+)«', '།\n<\g<1>>«'],
         ['<\n(\{.+?)>«', '\g<1>«'],     # fix special note markers
-        ['ག ([^།»\{\}]+)«', 'ག\n<\g<1>>«'],
-        ['ཀ ([^།»\{\}]+)«', 'ཀ\n<\g<1>>«'],
-        ['ཤ ([^།»\{\}]+)«', 'ཤ\n<\g<1>>«'],
+        ['([ཀགཤ།] )([^།»\{\}]+)«', '\g<1>\n<\g<2>>«'],
+        # ['ཀ ([^།»\{\}]+)«', 'ཀ\n<\g<1>>«'],
+        # ['ཤ ([^།»\{\}]+)«', 'ཤ\n<\g<1>>«'],
         # [' ([^ༀ-࿚]+)«', '\n<\g<1>>«'],  # catch ། @ «
         # delete note markers
         # ['<', ''],
@@ -85,12 +85,96 @@ def preprocessGoogleNotes(filename):
         ['། །\n', '།\n'],
         ]
 
+
     for p in patterns:
         text = re.sub(p[0], p[1], text)
     return text
 '''
 »འཁྲང་། ༄༅། «གཡུང་»
 '''
+
+def preprocessNamselNotes(filename):
+    """
+    this cleans up all note markers
+    :param text: plain text
+    :return: cleaned text
+    """
+    text = filename.read_text(encoding='utf-8')
+
+    patterns = [
+        # normalize punct
+        ['\r', '\n'],
+        ['༑', '།'],
+        ['།།', '། །'],
+        ['།་', '། '],
+        ['\s+', ' '],
+        ['།\s།\s*\n', '།\n'],
+        ['།\s།\s«', '། «'],
+        ['༌', '་'],      # normalize NB tsek
+        ['ག\s*།', 'ག'],
+        ['་\s*', '་'],
+        ['་\s*', '་'],
+        ['་\s*\n', '་'],
+        ['་+', '་'],
+        # tag pedurma page numbers #<vol-page>#
+        ['([0-9]{1,3})\D་?([0-9]+)', '\n#\g<1>-\g<2>#\n'],    # well formated
+        # ['([^\d#-])([0-9]{3,10})', '\g<1>\n#\g<2>#\n'],    # not well formated
+        # delete tibetan numbers
+        # ['[༠-༩]', ''],
+        # headers ++<header>++
+        # ['#\n(.+?)«', '#\n++\g<1>\n++«'],
+        # special notes
+        ['\(?(པོད་འདིའི་.+?)\)\s*', '\n{\g<1>}\n'],
+        ['(\{[^\}]+?) (.+?\})', '\g<1>_\g<2>'],     # deal with spaces in special notes
+        ['(\{[^\}]+?) (.+?\})', '\g<1>_\g<2>'],     # deal with spaces in special notes
+        ['(\{[^\}]+?) (.+?\})', '\g<1>_\g<2>'],     # deal with spaces in special notes
+        # normalize edition marks «<edition>»
+        ['〈〈?', '«'],      
+        ['〉〉?', '»'], 
+        ['《', '«'], 
+        ['》', '»'],
+        ['([ཀགཤ།]) །«', '\g<1> «'],
+        ['([ཀགཤ།])་?«', '\g<1> «'],
+        ['»\s+', '»'],
+        ['«\s+«', '«'],
+        ['»+', '»'],
+        ['[=—]', '-'],
+        ['\s+-', '-'],
+        ['\s+\+', '+'],
+        ['»\s+«', '»«'],
+        # add missing markers
+        [' ([^«]+»)', ' «\g<1>'],
+        ['([^»]+«) ', '\g<1>» '],
+        ['([^»]+«)-', '\g<1>»-'],
+        ['(«[^་]+?་)([^»])', '\g<1>»\g<2>'],
+        # tag note markers \<<note>\>
+        ['([ཤཀག།] )([^།»\}]+)«', '\g<1>\n<\g<2>>«'],
+        ['<\n(\{.+?)>«', '\g<1>«'],     # fix special note markers
+        ['(\s?[①-㊿]+)«', '\n<\g<1>>«'],
+        # [' ([^ༀ-࿚]+)«', '\n<\g<1>>«'],  # catch ། @ «
+        # Normalize zero in page references
+        ['([༠-༩])[༷་]', '\g<1>༠'],
+        # Add page references to first footnote marker
+        ['([༠-༩]+)([\n\s]*)<([\s]*①)', '\g<2><\g<1>\g<3>'],
+
+        ['»\n', '»'],  # to put all the notes split on two lines on a single one
+        ['། །\n', '།\n'],
+        ]
+
+
+    for p in patterns:
+        text = re.sub(p[0], p[1], text)
+    return text
+'''
+«༦༣༦
+«ཅོ་»༦༢་ཿ«སྣ། 
+བརྩིག༦༡༦\n< ①>«ཅོ་»འགྲོའོ།
+(གོང་གི་དུམ་བུ་འདི་(དེབ་འདིའི་ལྡེབ་༦༡༥ང༢༡་༦༡༨ང༡༦པའི་བར་)
+<①>«གཡུང་»ཉིར། \n<ཅིག >«པེ་»ཉིད། \n<ཅིག ①>«སྣར་»«ཞོལ་»མམ། 
+
+[^»> ]«
+'''
+
 
 def process(dump, page_num):
 
@@ -114,12 +198,17 @@ def save(content, filename, tag):
 
 if __name__ == '__main__':
     # Path to the initial Google OCR file
-    basePath = Path("./tests/test3")
-    filename = basePath / 'input' / 'a.txt'
+    basePath = Path("./input/footnote_text")
+    googlePath = basePath / 'googleOCR_text' / '73durchen-google.txt'
+    namselPath = basePath / 'namselOCR_text' / '73durchen-namsel.txt'
     # derge page on which the text starts
     init_num = '[135a]'
 
     # script steps
-    preprocessed = preprocessGoogleNotes(filename)
-    processed = process(preprocessed, init_num)
-    save(preprocessed, filename, '_num')
+    googlePrep = preprocessGoogleNotes(googlePath)
+    save(googlePrep, googlePath, '_num')
+    googleProc = process(googlePrep, init_num)
+
+    namselPrep = preprocessNamselNotes(namselPath)
+    save(namselPrep, namselPath, '_num')
+    namselProc = process(namselPrep, init_num)

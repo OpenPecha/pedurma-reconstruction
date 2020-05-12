@@ -41,7 +41,7 @@ def get_diff(B, A):
     dmp.Diff_Timeout = 0
     diffs = dmp.diff_main(B, A)
     # beautifies the diff list
-    dmp.diff_cleanupSemantic(diffs)
+    # dmp.diff_cleanupSemantic(diffs)
     print("Diff computation done.")
     return diffs
 
@@ -58,7 +58,7 @@ def rm_noise(diff):
     patterns = [
         "\n",
         "་+?",
-        "\u0020+",
+        " +",
         "།",
     ]
     for pattern in patterns:
@@ -103,9 +103,9 @@ def get_abs_marker(diff):
     """
     marker_ = ""
     patterns = [
-        "[\u2460-\u2469]",
-        "[\u0F20-\u0F29]+",
-        "[\u0030-\u0039]+",
+        "[①-⑩]",
+        "[༠-༩]+",
+        "[0-9]+",
     ]
     for pattern in patterns:
         if marker := re.search(pattern, diff):
@@ -190,7 +190,7 @@ def is_circle_number(footnote_marker):
     Output: number in circle 
     """
     value = ""
-    number = re.search("[\u2460-\u2469]", footnote_marker)
+    number = re.search("[①-⑩]", footnote_marker)
     if number:
         circle_num = {
             "①": "1",
@@ -232,7 +232,7 @@ def translate_tib_number(footnote_marker):
     numbers = re.finditer("\d", footnote_marker)
     if numbers:
         for number in numbers:
-            if re.search("[\u0F20-\u0F29]", number[0]):
+            if re.search("[༠-༩]", number[0]):
                 value += tib_num.get(number[0])
             else:
                 value += number[0]
@@ -321,7 +321,7 @@ def add_link(text, image_info):
         # detect page numbers and convert to image url
         if re.search("<<\d+,\d+\S+\d+>>", line):
             pg_no = re.search("<<(\d+),(\d+\S+\d+)>>", line)
-            if re.search("[\u0030-\u0039]", pg_no.group(2)):
+            if re.search("[0-9]", pg_no.group(2)):
                 if len(pg_no.group(1)) > 3:
                     pg_no = int(pg_no.group(1)[:3]) + offset
                 else:
@@ -340,7 +340,7 @@ def get_addition_footnote(diff):
     value = diff_cleaner(diff)
     result = ""
     ann_ = ""
-    patterns = ["[\u2460-\u2469]", "[\u0F20-\u0F29]+", "\)", "\(", "\d+", "\d+\S+\d+"]
+    patterns = ["[①-⑩]", "[༠-༩]+", "\)", "\(", "\d+", "\d+\S+\d+"]
     for pattern in patterns:
         ann = re.search(pattern, value)
         if ann:
@@ -349,10 +349,10 @@ def get_addition_footnote(diff):
         addition = rm_noise(ann_)
         pay_load = get_payload(addition)
         result = re.sub(ann_, f"<{pay_load},{ann_}>", value, 1)
-        cir_num = re.search("(>|་)[\u2460-\u2469]", result)
+        cir_num = re.search("(>|་)[①-⑩]", result)
         if cir_num:
             cpl = get_payload(cir_num[0][1:])
-            result = re.sub("[\u2460-\u2469]", f"<{cpl},{cir_num[0][1:]}>", result, 1)
+            result = re.sub("[①-⑩]", f"<{cpl},{cir_num[0][1:]}>", result, 1)
         pg = re.search("»\d+,(74\S*?\d+)", result)
         if pg:
             ppl = get_payload(pg[0][1:])
@@ -371,13 +371,13 @@ def is_subtract(diff):
         "®",
         "\“",
         "•",
-        "[\u0F20-\u0F29]",
+        "[༠-༩]",
         "[a-zA-Z]",
         "\)",
         "\(",
         "@",
         "་+?",
-        "\u0020+",
+        " +",
         "། །",
         "\d",
     ]
@@ -390,8 +390,8 @@ def is_subtract(diff):
 def is_note(diff):
     flag = True
     patterns = [
-        "[\u2460-\u2469]",
-        "[\u0F20-\u0F29]",
+        "[①-⑩]",
+        "[༠-༩]",
         "\)",
         "\(",
         "\d",
@@ -432,7 +432,7 @@ def apply_diff_durchen(diffs):
     for diff in diffs:
         if diff[0] == 0:
             pg = diff_cleaner(diff[1])
-            pg_ann = re.search("[^\u0F20-\u0F29]\d+", pg)
+            pg_ann = re.search("[^༠-༩]\d+", pg)
             if pg_ann:
                 if pg_ann[0] == "74":
                     result += f"<{pg_ann[0]}-"
@@ -512,20 +512,20 @@ def flow(B_path, A_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    # basePath = Path("./tests/test2")
-    # A_path = basePath / "input" / "a.txt"
-    # B_path = basePath / "input" / "b.txt"
+    basePath = Path("./tests/test2")
+    A_path = basePath / "input" / "a.txt"
+    B_path = basePath / "input" / "b.txt"
 
-    basePath = Path("./input/body_text")
-    A_path = basePath / "input" / "83A.txt"
-    B_path = basePath / "input" / "83B.txt"
+    # basePath = Path("./input/body_text")
+    # A_path = basePath / "input" / "83A.txt"
+    # B_path = basePath / "input" / "83B.txt"
 
     # only works text by text or note by note for now
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
     image_info = [
         "W1PD96682",
         73,
-        83,
+        17,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
     text_type = "body"
