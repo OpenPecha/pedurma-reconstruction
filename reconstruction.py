@@ -517,13 +517,18 @@ def flow(B_path, A_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    basePath = Path("./tests/test4")
-    A_path = basePath / "input" / "a.txt"
-    B_path = basePath / "input" / "b.txt"
+    # basePath = Path("./tests/test4")
+    # A_path = basePath / "input" / "a.txt"
+    # B_path = basePath / "input" / "b.txt"
 
     # basePath = Path("./input/body_text")
     # A_path = basePath / "input" / "83A.txt"
     # B_path = basePath / "input" / "83B.txt"
+
+    basePath = Path("./input/body_text")
+    A_path = basePath / "cleantext" / "$.txt"
+    B_path = basePath / "ocred_text" / "v073.txt"
+
 
     # only works text by text or note by note for now
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
