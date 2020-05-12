@@ -46,15 +46,15 @@ def test_reconstruction():
     basePath = Path("./test2/")
     target_path = basePath / "input" / "a.txt"
     source_path = basePath / "input" / "b.txt"
-    truth_path = basePath / "test1truth.txt"
+    # truth_path = basePath / "test1truth.txt"
     image_info = [
         "W1PD96682",
         74,
-        21,
+        19,
     ]
     target = Path(target_path).read_text()
     source = Path(source_path).read_text()
-    expected = Path(truth_path).read_text()
+    # expected = Path(truth_path).read_text()
     diffs = reconstruction.get_diff(source, target)
     diffsList = list(map(list, diffs))
     print("Dumping diffs...")
@@ -66,27 +66,28 @@ def test_reconstruction():
     filterDiffPath = basePath / "filterdiff.yaml"
     filterDiffPath.write_text(filterdiffsYaml, encoding="utf-8")
     # write_diffs(diffs)
-    # result = reconstruction.apply_diff_body(diffs, image_info)
-    # result = rm_markers_ann(result)
-    # with open(f"./test1/output/result.txt", "w+") as f:
-    #     f.write(result)
+    result = reconstruction.apply_diff_body(filterdiffs, image_info)
+    # result = reconstruction.add_link(result, image_info)
+    result = rm_markers_ann(result)
+    with open(f"./test2/output/result.txt", "w+") as f:
+        f.write(result)
     # assert result == expected, "Not match"
 
 
-def test_preprocessed():
-    """Test the preprocessing of footnote being normalised or not."""
+# def test_preprocessed():
+#     """Test the preprocessing of footnote being normalised or not."""
 
-    google_path = "./data/Reconstructor/footnote_text/input/test1google.txt"
-    namsel_path = "./data/Reconstructor/footnote_text/input/test1namsel.txt"
-    google_truth_path = "./data/Reconstructor/footnote_text/input/test1googletruth.txt"
-    namsel_truth_path = "./data/Reconstructor/footnote_text/input/test1namseltruth.txt"
-    google_text = Path(google_path).read_text()
-    namsel_text = Path(namsel_path).read_text()
-    google_truth = Path(google_truth_path).read_text()
-    namse_truth = Path(namsel_truth_path).read_text()
-    clean_google, clean_namsel = reconstruction.preprocess_footnote(google_text, namsel_text)
-    assert google_truth == clean_google
-    assert namse_truth == clean_namsel
+#     google_path = "./data/Reconstructor/footnote_text/input/test1google.txt"
+#     namsel_path = "./data/Reconstructor/footnote_text/input/test1namsel.txt"
+#     google_truth_path = "./data/Reconstructor/footnote_text/input/test1googletruth.txt"
+#     namsel_truth_path = "./data/Reconstructor/footnote_text/input/test1namseltruth.txt"
+#     google_text = Path(google_path).read_text()
+#     namsel_text = Path(namsel_path).read_text()
+#     google_truth = Path(google_truth_path).read_text()
+#     namse_truth = Path(namsel_truth_path).read_text()
+#     clean_google, clean_namsel = reconstruction.preprocess_footnote(google_text, namsel_text)
+#     assert google_truth == clean_google
+#     assert namse_truth == clean_namsel
 
 
 if __name__ == "__main__":

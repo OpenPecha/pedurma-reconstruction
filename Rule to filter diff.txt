@@ -1,15 +1,16 @@
 Rule to filter diff
 - if 0 => keep
 - if 1 => keep
-- if -1 and r = 0 and l = 0 => is candidate
+- if -1 and r == 0 and l == 0 => is candidate
+    - if r.start and l.end are not punct => is midsyl
+        - if has number or ) => is midsyl marker
     - if has \d+་?\D་?\d+ => tag as page annotation
     - if has number or ) => is marker
     - if is patterns* => is marker
     - if is space or punct => ignore
-    - if r.start and l.end are not punct => is midsyl
     - if l.end is not punct and r.start is tseg => noisy lone marker
 
-- if -1 and r = 1 => is candidate
+- if -1 and r == 1 => is candidate
     - if r.start and l.end are not punct => is midsyl
     - if has number or ) => is noisy marker
     - if is (not space or punct) and (l is space or punct) => is noisy marker
@@ -24,7 +25,15 @@ noisy marker
     - keep marker
 
 mid syl
-    - ignore current and add prefix(cor) to l
+    - if has marker
+	- if r.first is space
+		- add marker after the left
+	- if l.last is space
+		- add marker after second last syl of left
+	- else
+		- move l.last to right and add marker before l.last
+    - else
+	- ignore cur diff
 
 noisey lone marker
     - move l.end_syl to r and change to 0
