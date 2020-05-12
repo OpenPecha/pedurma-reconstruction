@@ -41,7 +41,7 @@ def get_diff(B, A):
     dmp.Diff_Timeout = 0
     diffs = dmp.diff_main(B, A)
     # beautifies the diff list
-    dmp.diff_cleanupSemantic(diffs)
+    # dmp.diff_cleanupSemantic(diffs)
     print("Diff computation done.")
     return diffs
 
@@ -454,7 +454,7 @@ def apply_diff_durchen(diffs):
     return result
 
 
-def filterDiffs(diffsYamlPath, type):
+def filterDiffs(diffsYamlPath, type, image_info):
     """
     TODO:
 
@@ -462,9 +462,31 @@ def filterDiffs(diffsYamlPath, type):
     rules should edit the diff list and the 0/1/-1 values 
 
     """
+    result = []
+    vol_num = image_info[1]
     diffs = yaml.safe_load(diffsYamlPath.read_text(encoding="utf-8"))
+    for i, diff in enumerate(diffs):
+        if diff[0] == 0 or diff[0] == 1:  # in B not in A
+            result.append([diff[0], diff[1], ""])
+        elif diff[0] == -1:  # in A not in B
+            if re.search(f"{vol_num}་?\D་?\d+", diff[1]):
+                result.append([1, diff[1], "pedurma-pagination"])
+            else:
+                if i > 0:
+                    left_diff = diffs[i - 1]
+                if i < len(diffs) - 1:
+                    right_diff = diffs[i + 1]
+                diff_ = rm_noise(diff[1])
+                if left_diff[0] == 0 and right_diff[0] == 0:
+                    if marker := get_abs_marker(diff_):
+                        result.append([1, diff[1], "marker"])
+                    elif marker := get_excep_marker(diff_):
+                        result.append([1, diff[1], "marker"])
+                elif right_diff[0] == 1:
+                    if marker := get_noisy_marker(diff_):
+                        result.append([1, diff[1], "marker"])
 
-    filterDiffs = diffs
+    filterDiffs = result
 
     return filterDiffs
 
@@ -525,7 +547,7 @@ if __name__ == "__main__":
     image_info = [
         "W1PD96682",
         73,
-        83,
+        21,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
     text_type = "body"

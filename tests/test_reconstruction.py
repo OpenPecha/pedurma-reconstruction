@@ -2,6 +2,7 @@ import sys
 
 sys.path.append("../")
 import re
+import yaml
 from pathlib import Path
 
 import reconstruction
@@ -42,7 +43,7 @@ def test_reconstruction():
     """Test for reconstruction.
 
     """
-    basePath = Path("./test1/")
+    basePath = Path("./test2/")
     target_path = basePath / "input" / "a.txt"
     source_path = basePath / "input" / "b.txt"
     truth_path = basePath / "test1truth.txt"
@@ -55,11 +56,20 @@ def test_reconstruction():
     source = Path(source_path).read_text()
     expected = Path(truth_path).read_text()
     diffs = reconstruction.get_diff(source, target)
+    diffsList = list(map(list, diffs))
+    print("Dumping diffs...")
+    diffsYaml = yaml.safe_dump(diffsList, allow_unicode=True)
+    diffsYamlPath = basePath / "diffs.yaml"
+    diffsYamlPath.write_text(diffsYaml, encoding="utf-8")
+    filterdiffs = reconstruction.filterDiffs(diffsYamlPath, "body", image_info)
+    filterdiffsYaml = yaml.safe_dump(filterdiffs, allow_unicode=True)
+    filterDiffPath = basePath / "filterdiff.yaml"
+    filterDiffPath.write_text(filterdiffsYaml, encoding="utf-8")
     # write_diffs(diffs)
-    result = reconstruction.apply_diff_body(diffs, image_info)
-    result = rm_markers_ann(result)
-    with open(f"./test1/output/result.txt", "w+") as f:
-        f.write(result)
+    # result = reconstruction.apply_diff_body(diffs, image_info)
+    # result = rm_markers_ann(result)
+    # with open(f"./test1/output/result.txt", "w+") as f:
+    #     f.write(result)
     # assert result == expected, "Not match"
 
 
