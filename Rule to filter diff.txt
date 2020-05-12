@@ -3,7 +3,6 @@ Rule to filter diff
 - if 1 => keep
 - if -1 and r == 0 and l == 0 => is candidate
     - if r.start and l.end are not punct => is midsyl
-        - if has number or ) => is midsyl marker
     - if has \d+་?\D་?\d+ => tag as page annotation
     - if has number or ) => is marker
     - if is patterns* => is marker
@@ -24,6 +23,7 @@ noisy marker
     - move l to r and change to 0
     - keep marker
 
+<<<<<<< HEAD
 mid syl
     - if has marker
 	- if r.first is space
@@ -34,6 +34,11 @@ mid syl
 		- move l.last to right and add marker before l.last
     - else
 	- ignore cur diff
+=======
+midsyl
+    - ignore current and add prefix(cor) to l
+    
+>>>>>>> 2717d20b31415c74f9906ec61ef2026d5e5e16cc
 
 noisey lone marker
     - move l.end_syl to r and change to 0
