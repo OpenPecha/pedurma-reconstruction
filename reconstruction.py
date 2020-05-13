@@ -303,8 +303,8 @@ def apply_diff_body(diffs, image_info):
                         result += f"<{value},{marker}>"
                     elif marker := get_excep_marker(diff_text):
                         result += f"<{marker}>"
-                    else:
-                        result += f'<{diff_text}>'
+                elif diff_tag == 'cat-marker':
+                    result += f'({diff_text})'
             else:
                 result += diff_text
 
@@ -512,7 +512,7 @@ def filterDiffs(diffsYamlPath, type, image_info):
                         result.append([1, diff[1], "marker"])
                     
                     elif diff_:
-                        result.append([1, diff[1], "marker"])
+                        result.append([1, diff[1], "cat-marker"])
                 elif right_diff[0] == 1:
 
                     if is_midsyl_marker(left_diff[1], right_diff[1]):
@@ -534,7 +534,7 @@ def filterDiffs(diffsYamlPath, type, image_info):
                             diffs[i + 1][1] = diffs[i + 1][1][1:]
                         result.append([1, diff[1], "marker"])
                     elif diff_:
-                        result.append([1, diff[1], "marker"])
+                        result.append([1, diff[1], "cat-marker"])
 
     filterDiffs = result
 
