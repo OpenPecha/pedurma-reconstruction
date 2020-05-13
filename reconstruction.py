@@ -109,7 +109,7 @@ def get_abs_marker(diff):
     """
     marker_ = ""
     patterns = [
-        "[①-⑩]",
+        "[①-⑳]",
         "[༠-༩]+",
         "[0-9]+",
     ]
@@ -169,24 +169,19 @@ def isvowel(char):
     return flag
 
 
-def get_midsyl_marker(left_diff, diff, right_diff):
-    """Extract marker from current diff if it is mid syllabus.
+def is_midsyl_marker(left_diff, right_diff):
+    """Check if current diff is mid syllabus.
 
     Args:
         left_diff (str): left diff text
-        diff (str): current diff text
         right_diff (str): right diff text
 
     Returns:
-        str: marker in current diff if it is mid syllabus or not
+        boolean : True if it is mid syllabus else False
     """
     if not is_punct(left_diff[-1]) and not is_punct(right_diff[0]):
-        if marker := get_abs_marker(diff):
-            return marker
-        elif marker := get_excep_marker(diff):
-            return marker
-        else:
-            return ""
+        return True
+    return False
 
 
 def get_noisy_marker(diff):
@@ -308,6 +303,8 @@ def apply_diff_body(diffs, image_info):
                         result += f"<{value},{marker}>"
                     elif marker := get_excep_marker(diff_text):
                         result += f"<{marker}>"
+                    else:
+                        result += f'<{diff_text}>'
             else:
                 result += diff_text
 
@@ -485,7 +482,7 @@ def filterDiffs(diffsYamlPath, type, image_info):
                     right_diff = diffs[i + 1]
                 diff_ = rm_noise(diff[1])
                 if left_diff[0] == 0 and right_diff[0] == 0:
-                    if get_midsyl_marker(left_diff[1], diff_, right_diff[1]):
+                    if is_midsyl_marker(left_diff[1], right_diff[1]):
                         if left_diff[1][-1] == " ":
                             lasttwo = left_diff[1][-2:]
                             result[-1][1] = result[-1][1][:-2]
@@ -513,9 +510,12 @@ def filterDiffs(diffsYamlPath, type, image_info):
                             result[-1][1] += "་"
                             diffs[i + 1][1] = diffs[i + 1][1][1:]
                         result.append([1, diff[1], "marker"])
+                    
+                    elif diff_:
+                        result.append([1, diff[1], "marker"])
                 elif right_diff[0] == 1:
 
-                    if get_midsyl_marker(left_diff[1], diff_, right_diff[1]):
+                    if is_midsyl_marker(left_diff[1], right_diff[1]):
                         if left_diff[1][-1] == " ":
                             lasttwo = left_diff[1][-2:]
                             result[-1][1] = result[-1][1][:-2]
@@ -532,6 +532,8 @@ def filterDiffs(diffsYamlPath, type, image_info):
                         if right_diff[1][0] == "་" and not is_punct(left_diff[1]):
                             result[-1][1] += "་"
                             diffs[i + 1][1] = diffs[i + 1][1][1:]
+                        result.append([1, diff[1], "marker"])
+                    elif diff_:
                         result.append([1, diff[1], "marker"])
 
     filterDiffs = result
