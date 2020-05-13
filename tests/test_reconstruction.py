@@ -34,7 +34,7 @@ def write_diffs(diffs):
     """
     result = ""
     for diff in diffs:
-        result += f"  {diff[0]}=>   {diff[1]}\n"
+        result += f"{diff[0]}=>{diff[1]}"
     with open("./data/Reconstructor/body_text/test1diffs.txt", "w+") as f:
         f.write(result)
 
