@@ -26,51 +26,50 @@ def rm_markers_ann(text):
     return result
 
 
-def write_diffs(diffs):
-    """All the diffs are formated and written in a file.
+def to_yaml(list_, base_path, type_=None):
+    """Dump list to yaml and write the yaml to a file on mentioned path.
 
     Args:
-        diffs (str): list of diff
+        list_ (list): list
+        base_path (path): base path object
+        type_ (str, optional): type of list you want to dump as yaml. Defaults to None.
     """
-    result = ""
-    for diff in diffs:
-        result += f"{diff[0]}=>{diff[1]}"
-    with open("./data/Reconstructor/body_text/test1diffs.txt", "w+") as f:
-        f.write(result)
+    print(f"Dumping {type_}...")
+    list_yaml = yaml.safe_dump(list_, allow_unicode=True)
+    list_yaml_path = base_path / f"{type_}.yaml"
+    list_yaml_path.write_text(list_yaml, encoding="utf-8")
+    print(f'{type_} Yaml saved...')
 
 
 def test_reconstruction():
     """Test for reconstruction.
 
     """
-    basePath = Path("./test2/")
-    target_path = basePath / "input" / "a.txt"
-    source_path = basePath / "input" / "b.txt"
-    # truth_path = basePath / "test1truth.txt"
+    base_path = Path("./test2/")
+    target_path = base_path / "input" / "a.txt"
+    source_path = base_path / "input" / "b.txt"
+    diffs_to_yaml = partial(to_yaml, type_ = 'diff')
+    filtered_diffs_to_yaml = partial(to_yaml, type_ = 'filtered_diff')
+    # truth_path = base_path / "test1truth.txt"
     image_info = [
         "W1PD96682",
         74,
         19,
     ]
+
     target = Path(target_path).read_text()
     source = Path(source_path).read_text()
     # expected = Path(truth_path).read_text()
+    print('Calculating diff...')
     diffs = reconstruction.get_diff(source, target)
-    diffsList = list(map(list, diffs))
-    print("Dumping diffs...")
-    diffsYaml = yaml.safe_dump(diffsList, allow_unicode=True)
-    diffsYamlPath = basePath / "diffs.yaml"
-    diffsYamlPath.write_text(diffsYaml, encoding="utf-8")
-    filterdiffs = reconstruction.filterDiffs(diffsYamlPath, "body", image_info)
-    filterdiffsYaml = yaml.safe_dump(filterdiffs, allow_unicode=True)
-    filterDiffPath = basePath / "filterdiff.yaml"
-    filterDiffPath.write_text(filterdiffsYaml, encoding="utf-8")
-    # write_diffs(diffs)
-    result = reconstruction.apply_diff_body(filterdiffs, image_info)
+    diffs_list = list(map(list, diffs))
+    diff_to_yaml(diffs_list, base_path)
+    filtered_diffs = reconstruction.filter_diffs(diffsYamlPath, "body", image_info)
+    filtered_diffs_to_yaml(filtered_diffs, base_path)
+    result = reconstruction.format_diff(filtered_diffs, image_info)
     # result = reconstruction.add_link(result, image_info)
     result = rm_markers_ann(result)
-    with open(f"./test2/output/result.txt", "w+") as f:
-        f.write(result)
+    (base_path / 'result.txt').write_text(new_text, encoding="utf-8")
     # assert result == expected, "Not match"
 
 

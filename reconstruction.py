@@ -15,17 +15,19 @@ Tibetan alphabet:
 import re
 import unicodedata
 from pathlib import Path
+from functools import partial
 import yaml
 from diff_match_patch import diff_match_patch
 
 
 def preprocess_footnote(B, A):
-    """
-    Normalises edition markers to minimise noise in diffs.
-
-    Input: B text and A text
-    Process: normalise the edition markers in the footnote
-    Output: B text and A text with same edition markers
+    """Normalises edition markers to minimise noise in diffs.
+    Args:
+        target (str): Target text
+        source (str): source text
+    Returns:
+        str: normalised target text
+        str: normalised source text
     """
     patterns = [["〈〈?", "«"], ["〉〉?", "»"], ["《", "«"], ["》", "»"]]
     clean_B = B
@@ -37,10 +39,12 @@ def preprocess_footnote(B, A):
 
 
 def get_diff(B, A):
-    """
-    Input: B and A text (str)
-    Process: computes diff of input texts using DMP.
-    Output: returns list of cleaned diffs.
+    """Compute diff between target and source using DMP.
+    Args:
+        target (str): target text
+        source (str): source text
+    Returns:
+        list: list of diffs
     """
     dmp = diff_match_patch()
     # Diff_timeout is set to 0 inorder to compute diff till end of file.
@@ -52,13 +56,27 @@ def get_diff(B, A):
     return diffs
 
 
-def rm_noise(diff):
-    """
-    Filters out noise in diff.
+def to_yaml(list_, base_path, type_=None):
+    """Dump list to yaml and write the yaml to a file on mentioned path.
 
-    Input: diff text
-    Process: removes noise
-    Output: footnote or footnote marker
+    Args:
+        list_ (list): list
+        base_path (path): base path object
+        type_ (str, optional): type of list you want to dump as yaml. Defaults to None.
+    """
+    print(f"Dumping {type_}...")
+    list_yaml = yaml.safe_dump(list_, allow_unicode=True)
+    list_yaml_path = base_path / f"{type_}.yaml"
+    list_yaml_path.write_text(list_yaml, encoding="utf-8")
+    print(f'{type_} Yaml saved...')
+
+
+def rm_noise(diff):
+    """Filter out noise from diff text.
+    Args:
+        diff (str): diff text
+    Returns:
+        str: cleaned diff text
     """
     result = diff
     patterns = [
@@ -71,6 +89,24 @@ def rm_noise(diff):
         noise = re.search(pattern, diff)
         if noise:
             result = result.replace(noise[0], "")
+    return result
+
+
+def rm_markers_ann(text):
+    """Remove page annotation and replace footnotemarker with #.
+
+    Args:
+        text (str): diff applied text
+
+    Returns:
+        str: diff applied text without page annotation and replaced footnotemarker with #
+    """
+    result = ""
+    lines = text.splitlines()
+    for line in lines:
+        line = re.sub("<<.+?>>", "", line)
+        line = re.sub("<.+?>", "#", line)
+        result += line + "\n"
     return result
 
 
@@ -89,23 +125,14 @@ def get_pg_ann(diff, vol_num):
     return f"<<{pg_num},{pg_pat[0]}>>"
 
 
-def get_noisy_lone_marker(left_diff, diff, right_diff):
-    if is_punct(left_diff[-1]) == False and (right_diff[0] == "་"):
-        if marker := get_abs_marker(diff):
-            return marker
-        elif marker := get_excep_marker(diff):
-            return marker
-        else:
-            return ""
-    else:
-        return ""
-
-
 def get_abs_marker(diff):
-    """
-    Input: diff
-    Process: extract footnote marker from diff
-    Output: fotenote marker
+    """Extract absolute footnote marker from diff text.
+
+    Args:
+        diff (str): diff text
+
+    Returns:
+        str: footnote marker
     """
     marker_ = ""
     patterns = [
@@ -169,7 +196,7 @@ def isvowel(char):
     return flag
 
 
-def is_midsyl_marker(left_diff, right_diff):
+def is_midsyl(left_diff, right_diff):
     """Check if current diff is mid syllabus.
 
     Args:
@@ -184,8 +211,53 @@ def is_midsyl_marker(left_diff, right_diff):
     return False
 
 
-def get_noisy_marker(diff):
-    """Extarct marker from noisy marker.
+def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff):
+    """Handle the middle of syllabus diff text in different situation.
+
+    Args:
+        result (list): Filtered diff list
+        diffs (list): Unfilterd diff list
+        left_diff (list): left diff type and text from current diff
+        diff (list): current diff type and text
+        i (int): current diff index
+        right_diff (list): right diff type and text from current diff
+    """
+    if left_diff[1][-1] == " ":
+        lasttwo = left_diff[1][-2:]
+        result[-1][1] = result[-1][1][:-2]
+        result.append([1, diff[1], "marker"])
+        diffs[i + 1][1] = lasttwo + diffs[i + 1][1]
+    elif right_diff[1][0] == " ":
+        result.append([1, diff[1], "marker"])
+    else:
+        if isvowel(right_diff[1][0]):
+            result[-1][1] += right_diff[1][0]
+            result.append([1, diff[1], "marker"])
+            diffs[i + 1][1] = diffs[i + 1][1][1:]
+        else:
+            lastsyl = left_diff[1].split("་")[-1]
+            result[-1][1] = result[-1][1][: -len(lastsyl)]
+            result.append([1, diff[1], "marker"])
+            diffs[i + 1][1] = lastsyl + diffs[i + 1][1]
+
+
+def tseg_shifter(result, diffs, left_diff, i, right_diff):
+    """Shift tseg if right diff starts with one and left diff ends with non punct.
+
+    Args:
+        result (list): filtered diff
+        diffs (list): unfiltered diffs
+        left_diff (list): contains left diff type and text
+        i (int): current index if diff in diffs
+        right_diff (list): contains right diff type and text
+    """
+    if right_diff[1][0] == "་" and not is_punct(left_diff[1]):
+        result[-1][1] += "་"
+        diffs[i + 1][1] = diffs[i + 1][1][1:]
+
+
+def get_marker(diff):
+    """Extarct marker from diff text.
 
     Args:
         diff (str): diff text
@@ -202,17 +274,15 @@ def get_noisy_marker(diff):
 
 
 def is_circle_number(footnote_marker):
-    """
-    Checks whether a footnote marker is number in circle or not, return if yes.
-
-    Input: footnote marker
-    Process: 
-        - checks whether the footnote marker is number in circle or not
-        - if so return number in circle.
-    Output: number in circle 
+    """Check whether footnote marker is number in circle or not and if so 
+       returns equivalent number.
+    Args:
+        footnote_marker (str): footnote marker
+    Returns:
+        str: number inside the circle
     """
     value = ""
-    number = re.search("[①-⑩]", footnote_marker)
+    number = re.search("[①-⑳]", footnote_marker)
     if number:
         circle_num = {
             "①": "1",
@@ -225,16 +295,21 @@ def is_circle_number(footnote_marker):
             "⑧": "8",
             "⑨": "9",
             "⑩": "10",
+            "⑪": "11",
+            "⑫": "12",
+            "⑬": "13",
+            "⑭": "14",
         }
         value = circle_num.get(number[0])
     return value
 
 
 def translate_tib_number(footnote_marker):
-    """
-    Input: footnote marker
-    Process: translate tibetan numerals to roman numbers and returns the result
-    Output: numbers(roman)
+    """Translate tibetan numeral in footnote marker to roman number.
+    Args:
+        footnote_marker (str): footnote marker
+    Returns:
+        str: footnote marker having numbers in roman numeral
     """
     value = ""
     if re.search("\d+\S+(\d+)", footnote_marker):
@@ -262,10 +337,11 @@ def translate_tib_number(footnote_marker):
 
 
 def get_value(footnote_marker):
-    """
-    Input: footnote_marker
-    Process: equivalent number is computed from footnote marker and returned
-    Output: equivalent numbers from footnote marker
+    """Compute the equivalent numbers in footnote marker payload and return it.
+    Args:
+        footnote_marker (str): footnote marker
+    Returns:
+        str: numbers in footnote marker
     """
     value = ""
     if is_circle_number(footnote_marker):
@@ -277,19 +353,16 @@ def get_value(footnote_marker):
     return value
 
 
-def apply_diff_body(diffs, image_info):
-    """
-    Input: list of diffs
-    Process: 
-        - filter the diffs
-        - add diff markers '<diff>'
-        - apply filtered diffs to B text
-    Output: B text with transfered annotations with markers.
+def format_diff(diffs, image_info):
+    """Format list of diff on target text.
+    Args:
+        diffs (list): list of diffs
+        image_info (list): contains work_id, volume number and image source offset
+    Returns:
+        str: target text with transfered annotations with markers.
     """
     vol_num = image_info[1]
     result = ""
-    left_diff = [0, ""]
-    # right_diff = [0, ""]
     for diff_type, diff_text, diff_tag in diffs:
         if diff_type == 0:
             result += diff_text
@@ -312,6 +385,14 @@ def apply_diff_body(diffs, image_info):
 
 
 def add_link(text, image_info):
+    """Add link of source image page.
+    Args:
+        text (str): target text having footnote maker transfered
+        image_info (list): contains work_id, volume number and image source offset
+    Returns:
+        str: target text with source image page link
+    """
+    
     result = ""
 
     work = image_info[0]
@@ -408,7 +489,7 @@ def is_note(diff):
 
 def reformat_footnote(text):
     """Replace edition name with their respective unique id and brings every footnote to newline.
-    Input:
+    Args:
         text (str): google OCRed footnote with namsel footnote markers transfered.
     Returns:
         (str): reformatted footnote
@@ -458,122 +539,91 @@ def apply_diff_durchen(diffs):
     return result
 
 
-def filterDiffs(diffsYamlPath, type, image_info):
-    """
-    TODO:
+def filter_diffs(diffs_list, type, image_info):
+    """Filter diff of text A and text B.
 
-    Create functions for each type of filtering rule.
-    rules should edit the diff list and the 0/1/-1 values 
+    Args:
+        diffs_list (list): list of diffs
+        type (str): type of text
+        image_info (list): contains work_id, volume number and source image offset.
 
+    Returns:
+        list: filtered diff
     """
     result = []
     vol_num = image_info[1]
-    diffs = yaml.safe_load(diffsYamlPath.read_text(encoding="utf-8"))
+    diffs = diffs_list
     for i, diff in enumerate(diffs):
         if diff[0] == 0 or diff[0] == 1:  # in B not in A
             result.append([diff[0], diff[1], ""])
         elif diff[0] == -1:  # in A not in B
-            if re.search(f"{vol_num}་?\D་?\d+", diff[1]):
+            if re.search(f"{vol_num}་?\D་?\d+", diff[1]): # checking diff text is pg_ann or not
                 result.append([1, diff[1], "pedurma-pagination"])
             else:
-                if i > 0:
+                if i > 0: # extracting left context of current diff
                     left_diff = diffs[i - 1]
-                if i < len(diffs) - 1:
+                if i < len(diffs) - 1: # extracting right context of current diff
                     right_diff = diffs[i + 1]
-                diff_ = rm_noise(diff[1])
+                diff_ = rm_noise(diff[1]) # removes unwanted new line, space and punct
                 if left_diff[0] == 0 and right_diff[0] == 0:
-                    if is_midsyl_marker(left_diff[1], right_diff[1]):
-                        if left_diff[1][-1] == " ":
-                            lasttwo = left_diff[1][-2:]
-                            result[-1][1] = result[-1][1][:-2]
-                            result.append([1, diff[1], "marker"])
-                            diffs[i + 1][1] = lasttwo + diffs[i + 1][1]
-                        elif right_diff[1][0] == " ":
-                            result.append([1, diff[1], "marker"])
-                        else:
-                            if isvowel(right_diff[1][0]):
-                                result[-1][1] += right_diff[1][0]
-                                result.append([1, diff[1], "marker"])
-                                diffs[i + 1][1] = diffs[i + 1][1][1:]
-                            else:
-                                lastsyl = left_diff[1].split("་")[-1]
-                                result[-1][1] = result[-1][1][: -len(lastsyl)]
-                                result.append([1, diff[1], "marker"])
-                                diffs[i + 1][1] = lastsyl + diffs[i + 1][1]
-                    elif get_abs_marker(diff_):
-                        if right_diff[1][0] == "་" and not is_punct(left_diff[1]):
-                            result[-1][1] += "་"
-                            diffs[i + 1][1] = diffs[i + 1][1][1:]
+                    # checks if current diff text is located in middle of a syllebus
+                    if is_midsyl(left_diff[1], right_diff[1]): 
+                        handle_mid_syl(result, diffs, left_diff, i, diff, right_diff)
+                    # checks if current diff text contains absolute marker or not
+                    elif get_marker(diff_):
+                        # Since cur diff is not mid syl, hence if any right diff starts with tseg will 
+                        # be shift to left last as there are no marker before tseg.
+                        tseg_shifter(result, diffs, left_diff, i, right_diff)
                         result.append([1, diff[1], "marker"])
-                    elif get_excep_marker(diff_):
-                        if right_diff[1][0] == "་" and not is_punct(left_diff[1]):
-                            result[-1][1] += "་"
-                            diffs[i + 1][1] = diffs[i + 1][1][1:]
-                        result.append([1, diff[1], "marker"])
-                    
+                    # Since diff type of -1 is from namsel and till now we are not able to detect
+                    # marker from cur diff, we will consider it as canditate marker.
                     elif diff_:
+                        tseg_shifter(result, diffs, left_diff, i, right_diff)
                         result.append([1, diff[1], "cat-marker"])
                 elif right_diff[0] == 1:
-
-                    if is_midsyl_marker(left_diff[1], right_diff[1]):
-                        if left_diff[1][-1] == " ":
-                            lasttwo = left_diff[1][-2:]
-                            result[-1][1] = result[-1][1][:-2]
-                            result.append([1, diff[1], "marker"])
-                            diffs[i + 1][1] = lasttwo + diffs[i + 1][1]
-                        elif right_diff[1][0] == " ":
-                            result.append([1, diff[1], "marker"])
-                        else:
-                            lastsyl = left_diff[1].split("་")[-1]
-                            result[-1][1] = result[-1][1][: -len(lastsyl)]
-                            result.append([1, diff[1], "marker"])
-                            diffs[i + 1][1] = lastsyl + diffs[i + 1][1]
-                    elif marker := get_noisy_marker(diff_):
-                        if right_diff[1][0] == "་" and not is_punct(left_diff[1]):
-                            result[-1][1] += "་"
-                            diffs[i + 1][1] = diffs[i + 1][1][1:]
+                    # Check if current diff is located in middle of syllabus or not.
+                    if is_midsyl(left_diff[1], right_diff[1]):
+                        handle_mid_syl(result, diffs, left_diff, i, diff, right_diff)
+                    elif get_marker(diff_):
+                        # Since cur diff is not mid syl, hence if any right diff starts with tseg will 
+                        # be shift to left last as there are no marker before tseg.
+                        tseg_shifter(result, diffs, left_diff, i, right_diff)
                         result.append([1, diff[1], "marker"])
-                    elif diff_:
-                        result.append([1, diff[1], "cat-marker"])
 
-    filterDiffs = result
+    filter_diffs = result
 
-    return filterDiffs
+    return filter_diffs
 
 
 def flow(B_path, A_path, text_type, image_info):
-    """
-    Script flow
-
-    Input: B text, A text, text_type(body text or footnote) and A image offset
-    Process: 
-        - diff is computed between B and A text
+    """ - diff is computed between B and A text
         - footnotes and footnotes markers are filtered from diffs
         - they are applied to B text with markers
         - A image links are computed and added at the end of each page
-    Output: B text with footnotes, with markers and with A image links
+
+    Args:
+        B_path (path): path of text B (namsel)
+        A_path (path): path of text A (clean)
+        text_type (str): type of text can be either body or footnote
+        image_info (list): Contains work_id, volume number and source image offset
     """
     B = B_path.read_text(encoding="utf-8")
     A = A_path.read_text(encoding="utf-8")
+    diffs_to_yaml = partial(to_yaml, type_ = 'diffs') # customising to_yaml function for diff list
+    filtered_diffs_to_yaml = partial(to_yaml, type_ = 'filtered_diffs') # customising to_yaml function for filtered diffs list
 
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
         print("Calculating diffs...")
         diffs = get_diff(B, A)
-        diffsList = list(map(list, diffs))
-        print("Dumping diffs...")
-        diffsYaml = yaml.safe_dump(diffsList, allow_unicode=True)
-        diffsYamlPath = basePath / "diffs.yaml"
-        diffsYamlPath.write_text(diffsYaml, encoding="utf-8")
-        filteredDiffs = filterDiffs(diffsYamlPath, "body", image_info)
-        filterdiffsYaml = yaml.safe_dump(filteredDiffs, allow_unicode=True)
-        filterDiffPath = basePath / "filterdiff.yaml"
-        filterDiffPath.write_text(filterdiffsYaml, encoding="utf-8")
-        newText = apply_diff_body(filteredDiffs, image_info)
-        newText = add_link(newText, image_info)
-        # with open(f"./output/body_text/{vol_num}.txt", "w+") as f:
-        #     f.write(result)
-        (basePath / "result.txt").write_text(newText, encoding="utf-8")
+        diffs_list = list(map(list, diffs))
+        diffs_to_yaml(diffs_list, base_path)
+        filtered_diffs = filter_diffs(diffs_list, "body", image_info)
+        filtered_diffs_to_yaml(filtered_diffs, base_path)
+        new_text = format_diff(filtered_diffs, image_info)
+        #new_text = add_link(new_text, image_info)
+        new_text = rm_markers_ann(new_text)
+        (base_path / "result.txt").write_text(new_text, encoding="utf-8")
     elif text_type == "footnote":
         clean_B, clean_A = preprocess_footnote(B, A)
         diffs = get_diff(clean_B, clean_A)
@@ -587,17 +637,17 @@ def flow(B_path, A_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    basePath = Path("./tests/test2")
-    A_path = basePath / "input" / "a.txt"
-    B_path = basePath / "input" / "b.txt"
+    base_path = Path("./tests/test2")
+    A_path = base_path / "input" / "a.txt"
+    B_path = base_path / "input" / "b.txt"
 
-    # basePath = Path("./input/body_text")
-    # A_path = basePath / "input" / "83A.txt"
-    # B_path = basePath / "input" / "83B.txt"
+    # base_path = Path("./input/body_text")
+    # A_path = base_path / "input" / "83A.txt"
+    # B_path = base_path / "input" / "83B.txt"
 
-    # basePath = Path("./input/body_text")
-    # A_path = basePath / "cleantext" / "$.txt"
-    # B_path = basePath / "ocred_text" / "v073.txt"
+    # base_path = Path("./input/body_text")
+    # A_path = base_path / "cleantext" / "$.txt"
+    # B_path = base_path / "ocred_text" / "v073.txt"
 
     # only works text by text or note by note for now
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
