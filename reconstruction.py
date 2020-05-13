@@ -595,9 +595,9 @@ if __name__ == "__main__":
     # A_path = basePath / "input" / "83A.txt"
     # B_path = basePath / "input" / "83B.txt"
 
-    basePath = Path("./input/body_text")
-    A_path = basePath / "cleantext" / "$.txt"
-    B_path = basePath / "ocred_text" / "v073.txt"
+    # basePath = Path("./input/body_text")
+    # A_path = basePath / "cleantext" / "$.txt"
+    # B_path = basePath / "ocred_text" / "v073.txt"
 
     # only works text by text or note by note for now
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
