@@ -3,6 +3,7 @@ import sys
 sys.path.append("../")
 import re
 import yaml
+from functools import partial
 from pathlib import Path
 
 import reconstruction
@@ -38,7 +39,7 @@ def to_yaml(list_, base_path, type_=None):
     list_yaml = yaml.safe_dump(list_, allow_unicode=True)
     list_yaml_path = base_path / f"{type_}.yaml"
     list_yaml_path.write_text(list_yaml, encoding="utf-8")
-    print(f'{type_} Yaml saved...')
+    print(f"{type_} Yaml saved...")
 
 
 def test_reconstruction():
@@ -48,28 +49,28 @@ def test_reconstruction():
     base_path = Path("./test2/")
     target_path = base_path / "input" / "a.txt"
     source_path = base_path / "input" / "b.txt"
-    diffs_to_yaml = partial(to_yaml, type_ = 'diff')
-    filtered_diffs_to_yaml = partial(to_yaml, type_ = 'filtered_diff')
+    diffs_to_yaml = partial(to_yaml, type_="diffs")
+    filtered_diffs_to_yaml = partial(to_yaml, type_="filtered_diffs")
     # truth_path = base_path / "test1truth.txt"
     image_info = [
         "W1PD96682",
         74,
-        19,
+        18,
     ]
 
     target = Path(target_path).read_text()
     source = Path(source_path).read_text()
     # expected = Path(truth_path).read_text()
-    print('Calculating diff...')
+    print("Calculating diff...")
     diffs = reconstruction.get_diff(source, target)
     diffs_list = list(map(list, diffs))
-    diff_to_yaml(diffs_list, base_path)
-    filtered_diffs = reconstruction.filter_diffs(diffsYamlPath, "body", image_info)
+    diffs_to_yaml(diffs_list, base_path)
+    filtered_diffs = reconstruction.filter_diffs(diffs_list, "body", image_info)
     filtered_diffs_to_yaml(filtered_diffs, base_path)
     result = reconstruction.format_diff(filtered_diffs, image_info)
     # result = reconstruction.add_link(result, image_info)
     result = rm_markers_ann(result)
-    (base_path / 'result.txt').write_text(new_text, encoding="utf-8")
+    (base_path / "output/result.txt").write_text(result, encoding="utf-8")
     # assert result == expected, "Not match"
 
 
