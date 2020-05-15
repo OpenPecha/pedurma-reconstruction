@@ -215,7 +215,7 @@ def is_midsyl(left_diff, right_diff):
     return False
 
 
-def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type = None):
+def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type=None):
     """Handle the middle of syllabus diff text in different situation.
 
     Args:
@@ -238,8 +238,8 @@ def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type = 
     else:
         if isvowel(right_diff[1][0]):
             result[-1][1] += right_diff[1][0]
-            if right_diff[1][1] == '་':
-                result[-1][1] += '་'
+            if right_diff[1][1] == "་":
+                result[-1][1] += "་"
                 diffs[i + 1][1] = diffs[i + 1][1][2:]
             else:
                 diffs[i + 1][1] = diffs[i + 1][1][1:]
@@ -400,6 +400,7 @@ def format_diff(diffs, image_info):
 
 def add_link(text, image_info):
     """Add link of source image page.
+
     Args:
         text (str): target text having footnote maker transfered
         image_info (list): contains work_id, volume number and image source offset
@@ -434,37 +435,40 @@ def add_link(text, image_info):
     return result
 
 
-def get_addition_footnote(diff):
+def get_pagination(diff, cur_loc, diffs, vol_num):
+    """Extract pedurma pagination from diffs.
 
-    value = diff_cleaner(diff)
-    result = ""
-    ann_ = ""
-    patterns = ["[①-⑩]", "[༠-༩]+", "\)", "\(", "\d+", "\d+\S+\d+"]
-    for pattern in patterns:
-        ann = re.search(pattern, value)
-        if ann:
-            ann_ = ann[0]
-    if ann_:
-        addition = rm_noise(ann_)
-        pay_load = get_payload(addition)
-        result = re.sub(ann_, f"<{pay_load},{ann_}>", value, 1)
-        cir_num = re.search("(>|་)[①-⑩]", result)
-        if cir_num:
-            cpl = get_payload(cir_num[0][1:])
-            result = re.sub("[①-⑩]", f"<{cpl},{cir_num[0][1:]}>", result, 1)
-        pg = re.search("»\d+,(74\S*?\d+)", result)
-        if pg:
-            ppl = get_payload(pg[0][1:])
-            result = re.sub("74\S*?\d+", f"<{ppl},{pg.group(1)}>", result, 1)
-    else:
-        result = f"<{value}>"
-    # print(f'{value}    {result}')
-    return result
+    Args:
+        diff (str): diff text
+        cur_loc (int): current diff location in diff list
+        diffs (list): diff list
+        vol_num (int): volume number
+
+    Returns:
+        str: pedurma pagination
+    """
+    pagination = ""
+    step = 0
+    if diff == str(vol_num):
+        for walker in diffs[cur_loc + 1 :]:
+            if walker[0] == 0:
+                break
+            step += 1
+        pagination += f"{diff}—{walker[1]}"
+        del diffs[cur_loc + 1 : cur_loc + 2 + step]
+    return pagination
 
 
-def is_subtract(diff):
-    # needs revision
-    flag = False
+def rm_marker(diff):
+    """Remove marker of google ocr text.
+
+    Args:
+        diff (str): diff text
+
+    Returns:
+        str: diff text without footnote marker of google ocr
+    """
+    result = diff
     patterns = [
         "©",
         "®",
@@ -474,22 +478,31 @@ def is_subtract(diff):
         "[a-zA-Z]",
         "\)",
         "\(",
+        "\u0020+",
         "@",
         "་+?",
-        " +",
         "། །",
         "\d",
+        "།",
     ]
     for pattern in patterns:
         if re.search(pattern, diff):
-            flag = True
-    return flag
+            result = re.sub(pattern, "", result)
+    return result
 
 
 def is_note(diff):
+    """Check if diff text is note or marker.
+
+    Args:
+        diff (str): diff text
+
+    Returns:
+        boolean: True if diff text is note else False.
+    """
     flag = True
     patterns = [
-        "[①-⑩]",
+        "[①-⑳]",
         "[༠-༩]",
         "\)",
         "\(",
@@ -520,38 +533,10 @@ def reformat_footnote(text):
         ["«ཞོལ་»", "«h»"],
     ]
     text = text.replace("\n", "")
-    text = text.replace("<", "\n<")
+    text = re.sub("(<+)", r"\n\1", text)
     for edition, edition_id in editions:
         text = text.replace(edition, edition_id)
     return text
-
-
-def apply_diff_durchen(diffs):
-    # TODO: needs revision
-    result = ""
-    for diff in diffs:
-        if diff[0] == 0:
-            pg = diff_cleaner(diff[1])
-            pg_ann = re.search("[^༠-༩]\d+", pg)
-            if pg_ann:
-                if pg_ann[0] == "74":
-                    result += f"<{pg_ann[0]}-"
-                else:
-                    result = f"{result[:-3]}{pg_ann[0]},74-{pg_ann[0]}>"
-            else:
-                result += diff[1]
-        elif diff[0] == -1:
-            if is_subtract(diff[1]):
-                continue
-            # remove noise from diff
-            result += diff[1]
-        else:
-            if is_note(diff[1]):
-                continue
-            result += get_addition_dur(diff[1])
-    result = reformat_durchen(result)
-    result = add_link(result)
-    return result
 
 
 def filter_diffs(diffs_list, type, image_info):
@@ -572,7 +557,9 @@ def filter_diffs(diffs_list, type, image_info):
         if diff[0] == 0 or diff[0] == 1:  # in B not in A
             result.append([diff[0], diff[1], ""])
         elif diff[0] == -1:  # in A not in B
-            if re.search(f"{vol_num}་?\D་?\d+", diff[1]):  # checking diff text is pg_ann or not
+            if re.search(
+                f"{vol_num}་?\D་?\d+", diff[1]
+            ):  # checking diff text is pagination or not
                 result.append([1, diff[1], "pedurma-pagination"])
             else:
                 if i > 0:  # extracting left context of current diff
@@ -583,7 +570,9 @@ def filter_diffs(diffs_list, type, image_info):
                 if left_diff[0] == 0 and right_diff[0] == 0:
                     # checks if current diff text is located in middle of a syllebus
                     if is_midsyl(left_diff[1], right_diff[1]) and get_marker(diff[1]):
-                        handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type="marker")
+                        handle_mid_syl(
+                            result, diffs, left_diff, i, diff, right_diff, marker_type="marker"
+                        )
                     # checks if current diff text contains absolute marker or not
                     elif get_marker(diff[1]):
                         # Since cur diff is not mid syl, hence if any right diff starts with tseg will
@@ -595,7 +584,13 @@ def filter_diffs(diffs_list, type, image_info):
                     elif diff_:
                         if is_midsyl(left_diff[1], right_diff[1]):
                             handle_mid_syl(
-                                result, diffs, left_diff, i, diff, right_diff, marker_type ="candidate-marker"
+                                result,
+                                diffs,
+                                left_diff,
+                                i,
+                                diff,
+                                right_diff,
+                                marker_type="candidate-marker",
                             )
 
                         else:
@@ -604,7 +599,9 @@ def filter_diffs(diffs_list, type, image_info):
                 elif right_diff[0] == 1:
                     # Check if current diff is located in middle of syllabus or not.
                     if is_midsyl(left_diff[1], right_diff[1]) and get_marker(diff[1]):
-                        handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type="marker")
+                        handle_mid_syl(
+                            result, diffs, left_diff, i, diff, right_diff, marker_type="marker"
+                        )
                     elif get_marker(diff[1]):
                         # Since cur diff is not mid syl, hence if any right diff starts with tseg will
                         # be shift to left last as there are no marker before tseg.
@@ -620,7 +617,7 @@ def filter_diffs(diffs_list, type, image_info):
                                     i,
                                     diff,
                                     right_diff,
-                                    marker_type = "candidate-marker",
+                                    marker_type="candidate-marker",
                                 )
                             else:
                                 result.append([1, diff[1], "candidate-marker"])
@@ -629,6 +626,47 @@ def filter_diffs(diffs_list, type, image_info):
     filter_diffs = result
 
     return filter_diffs
+
+
+def filter_footnote_diffs(diffs, vol_num):
+    """Filter the diffs of google ocr output and namsel ocr output.
+
+    Args:
+        diffs (list): diff list
+        vol_num (int): colume number
+
+    Returns:
+        list: filtered diff containing notes from google ocr o/p and marker from namsel ocr o/p
+    """
+
+    left_diff = [0, ""]
+    result = []
+    for i, diff in enumerate(diffs):
+        if diff[1] == "»«ཅོ་":
+            print("check")
+        if diff[0] == 0:
+            if pagination := get_pagination(diff[1], i, diffs, vol_num):
+                result.append([1, pagination, "pedurma-pagination"])
+            else:
+                result.append([0, diff[1], ""])
+        elif diff[0] == 1:
+            if clean_diff := rm_marker(diff[1]):
+                result.append([1, clean_diff, ""])
+        else:
+            diff_ = rm_noise(diff[1])
+            if i > 0:  # extracting left context of current diff
+                left_diff = diffs[i - 1]
+            if i < len(diffs) - 1:  # extracting right context of current diff
+                right_diff = diffs[i + 1]
+            if left_diff[0] == 0 and right_diff[0] == 0 and right_diff[1] in "»":
+                if is_note(diff[1]):
+                    continue
+                result.append([1, diff_, "marker"])
+            elif right_diff[0] == 1:
+                if get_abs_marker(diff[1]):
+                    result.append([1, diff_, "marker"])
+                    diffs[i + 1][1] = re.sub("[^\n]", "", right_diff[1])
+    return result
 
 
 def flow(B_path, A_path, text_type, image_info):
@@ -665,9 +703,17 @@ def flow(B_path, A_path, text_type, image_info):
     elif text_type == "footnote":
         clean_B, clean_A = preprocess_footnote(B, A)
         diffs = get_diff(clean_B, clean_A)
-        result = apply_diff_footnote(diffs)
-        with open(f"./footnote/footnote_{vol_num}.txt", "w+", encoding="utf-8") as f:
-            f.write(result)
+        diffs_list = list(map(list, diffs))
+        diffs_to_yaml(diffs_list, base_path)
+        filtered_diffs = filter_footnote_diffs(diffs_list, image_info[1])
+        filtered_diffs_to_yaml(filtered_diffs, base_path)
+        new_text = format_diff(filtered_diffs, image_info)
+        # new_text = rm_markers_ann(new_text)
+        new_text = reformat_footnote(new_text)
+        (base_path / "result.txt").write_text(new_text, encoding="utf-8")
+        # result = apply_diff_footnote(diffs)
+        # with open(f"./footnote/footnote_{vol_num}.txt", "w+", encoding="utf-8") as f:
+        #     f.write(result)
     else:
         print("Type not found")
     print("Done")
@@ -675,7 +721,7 @@ def flow(B_path, A_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    base_path = Path("./tests/test2")
+    base_path = Path("./tests/durchen_test1/")
     A_path = base_path / "input" / "a.txt"
     B_path = base_path / "input" / "b.txt"
 
@@ -691,10 +737,10 @@ if __name__ == "__main__":
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
     image_info = [
         "W1PD96682",
-        74,
-        18,
+        73,
+        17,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
-    text_type = "body"
+    text_type = "footnote"
 
     flow(B_path, A_path, text_type, image_info)

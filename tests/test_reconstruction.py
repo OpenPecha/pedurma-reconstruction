@@ -46,7 +46,7 @@ def test_reconstruction():
     """Test for reconstruction.
 
     """
-    base_path = Path("./test2/")
+    base_path = Path("./test1/")
     target_path = base_path / "input" / "a.txt"
     source_path = base_path / "input" / "b.txt"
     diffs_to_yaml = partial(to_yaml, type_="diffs")
