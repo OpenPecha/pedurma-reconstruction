@@ -390,11 +390,35 @@ def format_diff(diffs, image_info):
                         result += f"<{value},{marker}>"
                     elif marker := get_excep_marker(diff_text):
                         result += f"<{marker}>"
+                    else:
+                        result += f"<{diff_text}>"
                 elif diff_tag == "candidate-marker":
                     result += f"({diff_text})"
             else:
                 result += diff_text
 
+    return result
+
+
+def reformatting_body(text):
+    """Reformat marker annotation using pedurma pagination.
+
+    Args:
+        text (str): unformatted text
+
+    Returns:
+        str: formatted text
+    """
+
+    result = ""
+    page_anns = re.findall("<<\S+>>", text)
+    pages = re.split("<<\S+>>", text)
+    for page, ann in zip(pages, page_anns):
+        markers = re.finditer("<\S+?>", page)
+        for i, marker in enumerate(markers, 1):
+            repl = f"<{i},{marker[0][1:-1]}>"
+            page = page.replace(marker[0], repl)
+        result += page + ann
     return result
 
 
@@ -433,6 +457,26 @@ def add_link(text, image_info):
         else:
             result += line + "\n"
     return result
+
+
+def candidate_to_marker(left_diff, diff, right_diff):
+    """Check whether candidate marker is marker or not.
+
+    Args:
+        left_diff (str): left diff text
+        diff (str): current diff which is candidate marker
+        right_diff (str): right diff text
+
+    Returns:
+        boolean: True if current diff is marker else False
+    """
+    left_context = left_diff + diff
+    right_context = right_diff + diff
+    contexts = [left_context, right_context, left_context + right_diff]
+    for context in contexts:
+        if is_word(context):
+            return False
+    return True
 
 
 def get_pagination(diff, cur_loc, diffs, vol_num):
@@ -582,7 +626,11 @@ def filter_diffs(diffs_list, type, image_info):
                     # Since diff type of -1 is from namsel and till now we are not able to detect
                     # marker from cur diff, we will consider it as candidate marker.
                     elif diff_:
-                        if is_midsyl(left_diff[1], right_diff[1]):
+                        if (
+                            "ང" in left_diff[1][-3:] and diff_ == "སྐེ"
+                        ):  # an exception case where candidate fails to be marker.
+                            continue
+                        elif is_midsyl(left_diff[1], right_diff[1]):
                             handle_mid_syl(
                                 result,
                                 diffs,
@@ -590,12 +638,12 @@ def filter_diffs(diffs_list, type, image_info):
                                 i,
                                 diff,
                                 right_diff,
-                                marker_type="candidate-marker",
+                                marker_type="marker",
                             )
 
                         else:
                             tseg_shifter(result, diffs, left_diff, i, right_diff)
-                            result.append([1, diff[1], "candidate-marker"])
+                            result.append([1, diff[1], "marker"])
                 elif right_diff[0] == 1:
                     # Check if current diff is located in middle of syllabus or not.
                     if is_midsyl(left_diff[1], right_diff[1]) and get_marker(diff[1]):
@@ -609,7 +657,11 @@ def filter_diffs(diffs_list, type, image_info):
                         result.append([1, diff[1], "marker"])
                     else:
                         if diff_ != "" and right_diff[1] in ["\n", " "]:
-                            if is_midsyl(left_diff[1], right_diff[1]):
+                            if (
+                                "ང" in left_diff[1][-2:] and diff_ == "སྐེ"
+                            ):  # an exception case where candidate fails to be marker.
+                                continue
+                            elif is_midsyl(left_diff[1], right_diff[1]):
                                 handle_mid_syl(
                                     result,
                                     diffs,
@@ -617,10 +669,10 @@ def filter_diffs(diffs_list, type, image_info):
                                     i,
                                     diff,
                                     right_diff,
-                                    marker_type="candidate-marker",
+                                    marker_type="marker",
                                 )
                             else:
-                                result.append([1, diff[1], "candidate-marker"])
+                                result.append([1, diff[1], "marker"])
                     # if diff_ is not empty and right diff is ['\n', ' '] then make it candidate markrer
 
     filter_diffs = result
@@ -638,7 +690,6 @@ def filter_footnote_diffs(diffs, vol_num):
     Returns:
         list: filtered diff containing notes from google ocr o/p and marker from namsel ocr o/p
     """
-
     left_diff = [0, ""]
     result = []
     for i, diff in enumerate(diffs):
@@ -697,6 +748,7 @@ def flow(B_path, A_path, text_type, image_info):
         filtered_diffs = filter_diffs(diffs_list, "body", image_info)
         filtered_diffs_to_yaml(filtered_diffs, base_path)
         new_text = format_diff(filtered_diffs, image_info)
+        # new_text = reformatting_body(new_text)
         # new_text = add_link(new_text, image_info)
         new_text = rm_markers_ann(new_text)
         (base_path / "result.txt").write_text(new_text, encoding="utf-8")
@@ -721,7 +773,7 @@ def flow(B_path, A_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    base_path = Path("./tests/durchen_test1/")
+    base_path = Path("./tests/test2/")
     A_path = base_path / "input" / "a.txt"
     B_path = base_path / "input" / "b.txt"
 
@@ -737,10 +789,10 @@ if __name__ == "__main__":
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
     image_info = [
         "W1PD96682",
-        73,
-        17,
+        74,
+        18,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
-    text_type = "footnote"
+    text_type = "body"
 
     flow(B_path, A_path, text_type, image_info)
