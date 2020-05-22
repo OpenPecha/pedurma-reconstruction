@@ -160,7 +160,7 @@ def get_excep_marker(diff):
         str: exception marker
     """
     marker_ = ""
-    patterns = ["པོ་", "འི", "ཚོ་", "ད", "སུ", "རིན", "\(", "\)", "།\S+", "〉"]
+    patterns = ["པོ་", "འི", "ཚོ་", "ད", "སུ", "རིན", "\(", "\)", "།\S+", "〉", "ཏུཉེ", "ཡོཉེ"]
     for pattern in patterns:
         marker = re.search(pattern, diff)
         if marker := re.search(pattern, diff):
@@ -459,26 +459,6 @@ def add_link(text, image_info):
     return result
 
 
-def candidate_to_marker(left_diff, diff, right_diff):
-    """Check whether candidate marker is marker or not.
-
-    Args:
-        left_diff (str): left diff text
-        diff (str): current diff which is candidate marker
-        right_diff (str): right diff text
-
-    Returns:
-        boolean: True if current diff is marker else False
-    """
-    left_context = left_diff + diff
-    right_context = right_diff + diff
-    contexts = [left_context, right_context, left_context + right_diff]
-    for context in contexts:
-        if is_word(context):
-            return False
-    return True
-
-
 def get_pagination(diff, cur_loc, diffs, vol_num):
     """Extract pedurma pagination from diffs.
 
@@ -528,6 +508,7 @@ def rm_marker(diff):
         "། །",
         "\d",
         "།",
+        "༄༅",
     ]
     for pattern in patterns:
         if re.search(pattern, diff):
@@ -567,8 +548,9 @@ def reformat_footnote(text):
         (str): reformatted footnote
     """
     editions = [
-        ["«དགེ»", "«d»"],
+        ["«སྡེ་»", "«d»"],
         ["«གཡུང་»", "«y»"],
+        ["«གཡུང»", "«y»"],
         ["«ལི་»", "«j»"],
         ["«པེ་»", "«q»"],
         ["«སྣར་»", "«n»"],
@@ -693,8 +675,6 @@ def filter_footnote_diffs(diffs, vol_num):
     left_diff = [0, ""]
     result = []
     for i, diff in enumerate(diffs):
-        if diff[1] == "»«ཅོ་":
-            print("check")
         if diff[0] == 0:
             if pagination := get_pagination(diff[1], i, diffs, vol_num):
                 result.append([1, pagination, "pedurma-pagination"])
@@ -709,14 +689,18 @@ def filter_footnote_diffs(diffs, vol_num):
                 left_diff = diffs[i - 1]
             if i < len(diffs) - 1:  # extracting right context of current diff
                 right_diff = diffs[i + 1]
-            if left_diff[0] == 0 and right_diff[0] == 0 and right_diff[1] in "»":
+            if left_diff[0] == 0 and right_diff[0] == 0 and "»" != right_diff[1].strip("་"):
                 if is_note(diff[1]):
                     continue
                 result.append([1, diff_, "marker"])
-            elif right_diff[0] == 1:
+            elif right_diff[0] == 1 and "»" != left_diff[1].strip("་"):
                 if get_abs_marker(diff[1]):
                     result.append([1, diff_, "marker"])
                     diffs[i + 1][1] = re.sub("[^\n]", "", right_diff[1])
+                elif get_abs_marker(right_diff[1]):
+                    result.append([1, right_diff[1], "marker"])
+                elif get_excep_marker(diff[1]):
+                    result.append([1, diff_, "marker"])
     return result
 
 
@@ -754,6 +738,7 @@ def flow(B_path, A_path, text_type, image_info):
         (base_path / "result.txt").write_text(new_text, encoding="utf-8")
     elif text_type == "footnote":
         clean_B, clean_A = preprocess_footnote(B, A)
+        print("Calculating diffs..")
         diffs = get_diff(clean_B, clean_A)
         diffs_list = list(map(list, diffs))
         diffs_to_yaml(diffs_list, base_path)
@@ -773,7 +758,7 @@ def flow(B_path, A_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    base_path = Path("./tests/test2/")
+    base_path = Path("./tests/durchen_test1/")
     A_path = base_path / "input" / "a.txt"
     B_path = base_path / "input" / "b.txt"
 
@@ -789,10 +774,10 @@ if __name__ == "__main__":
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
     image_info = [
         "W1PD96682",
-        74,
-        18,
+        73,
+        17,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
-    text_type = "body"
+    text_type = "footnote"
 
     flow(B_path, A_path, text_type, image_info)
