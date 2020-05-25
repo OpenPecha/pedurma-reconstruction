@@ -13,6 +13,7 @@ Tibetan alphabet:
 
 """
 import re
+from itertools import zip_longest
 import unicodedata
 from pathlib import Path
 from functools import partial
@@ -413,7 +414,7 @@ def reformatting_body(text):
     result = ""
     page_anns = re.findall("<p\S+?>", text)
     pages = re.split("<p\S+?>", text)
-    for page, ann in zip(pages, page_anns):
+    for page, ann in zip_longest(pages, page_anns,fillvalue = ''):
         markers = re.finditer("<\S+?>", page)
         for i, marker in enumerate(markers, 1):
             repl = f"<{i},{marker[0][1:-1]}>"
@@ -733,9 +734,9 @@ def flow(B_path, A_path, text_type, image_info):
         filtered_diffs_to_yaml(filtered_diffs, base_path)
         new_text = format_diff(filtered_diffs, image_info)
         new_text = reformatting_body(new_text)
-        new_text = add_link(new_text, image_info)
+        # new_text = add_link(new_text, image_info)
         # new_text = rm_markers_ann(new_text)
-        (base_path / "output/result.txt").write_text(new_text, encoding="utf-8")
+        (base_path / f"output/result{image_info[1]}.txt").write_text(new_text, encoding="utf-8")
     elif text_type == "footnote":
         clean_B, clean_A = preprocess_footnote(B, A)
         print("Calculating diffs..")
@@ -758,9 +759,9 @@ def flow(B_path, A_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    base_path = Path("./tests/test2/")
-    A_path = base_path / "input" / "a.txt"
-    B_path = base_path / "input" / "b.txt"
+    base_path = Path("./input/body_text")
+    A_path = base_path / "input" / "73A.txt"
+    B_path = base_path / "input" / "73B.txt"
 
     # base_path = Path("./input/body_text")
     # A_path = base_path / "input" / "83A.txt"
@@ -774,8 +775,8 @@ if __name__ == "__main__":
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
     image_info = [
         "W1PD96682",
-        74,
-        18,
+        73,
+        17,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
     text_type = "body"
