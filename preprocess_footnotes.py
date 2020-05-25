@@ -13,7 +13,6 @@ def derge_page_increment(p_num):
 
     return f'[{page}{side}]'
 
-
 def preprocessGoogleNotes(text):
     """
     this cleans up all note markers

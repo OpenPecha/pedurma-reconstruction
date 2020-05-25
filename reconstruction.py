@@ -211,6 +211,7 @@ def is_midsyl(left_diff, right_diff):
     Returns:
         boolean : True if it is mid syllabus else False
     """
+    print(left_diff[-1], right_diff[0])
     if (is_punct(left_diff[-1]) == False) and (is_punct(right_diff[0]) == False):
         return True
     return False
