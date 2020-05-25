@@ -28,28 +28,6 @@ def preprocessGoogleNotes(text):
         ['༑', '།'],
         ['།།', '། །'],
         ['།་', '། '],
-        # ['ག་', 'ག '],   # »-ཅག་༧ »གཞག་༡9 TODO
-        ['\s+', ' '],
-        ['།\s།\s*\n', '།\n'],
-        ['།\s།\s«', '། «'],
-        ['༌', '་'],      # normalize NB tsek
-        ['ག\s*།', 'ག'],
-        ['་\s*', '་'],
-        ['་\s*', '་'],
-        ['་\s*\n', '་'],
-        ['་+', '་'],
-        # 
-        ['([^+\s་ཀ-ྼ])། ', '\g<1>?། '],   # ༧། TODO
-        # tag pedurma page numbers #<vol-page>#
-        ['([0-9]{1,3})\D་?([0-9]+)', '\n#\g<1>-\g<2>#\n'],    # well formated
-        ['([^\d#-])([0-9]{3,10})', '\g<1>\n#\g<2>#\n'],    # not well formated
-        # headers ++<header>++
-        ['#\n(.+?)«', '#\n++\g<1>\n++«'],
-        # special notes
-        ['\(?(པོད་འདིའི་ནང་.+?)\)\s*', '\n{\g<1>}\n'],
-        ['(\{[^\}]+?) (.+?\})', '\g<1>_\g<2>'],     # deal with spaces in special notes
-        ['(\{[^\}]+?) (.+?\})', '\g<1>_\g<2>'],     # deal with spaces in special notes
-        ['(\{[^\}]+?) (.+?\})', '\g<1>_\g<2>'],     # deal with spaces in special notes
         # normalize edition marks «<edition>»
         ['〈〈?', '«'],      
         ['〉〉?', '»'], 
@@ -69,19 +47,48 @@ def preprocessGoogleNotes(text):
         ['([^»]+«) ', '\g<1>» '],
         ['([^»]+«)-', '\g<1>»-'],
         ['(«[^་]+?་)([^»])', '\g<1>»\g<2>'],
+        # tag pedurma page numbers #<vol-page>#
+        ['(\n[0-9]+?)(([ —=-]+?)|(\n))([0-9]+?\n)', '#\g<1>-\g<5>#'],    # separators FIXME not catching 73-821
+        # ['([^\d#-])([0-9]{3,10})', '\g<1>#\g<2>#'],    # not well formated
+        # ['\d#(\d+?-\d+?)#«', '\g<1>«'],    # clear false positives
+        ['([02468])#', '\g<1>e#'],    # even: 
+        ['([13579])#', '\g<1>o#'],    # odd: only have text། [༠-༩]
+        # ['ག་', 'ག '],   # »-ཅག་༧ »གཞག་༡9 TODO
+        ['\s+', ' '],
+        ['།\s།\s*\n', '།\n'],
+        ['།\s།\s«', '། «'],
+        ['༌', '་'],      # normalize NB tsek
+        ['ག\s*།', 'ག'],
+        ['་\s*', '་'],
+        ['་\s*', '་'],
+        ['་\s*\n', '་'],
+        ['་+', '་'],
+        # 
+        ['([^+\s་ཀ-ྼ])། ', '\g<1>?། '],   # ༧། TODO
+        # special notes
+        ['(\(?པོད་འདིའི་ནང་.+?\))\s*', '{\g<1>}\n'],
+        ['(\{[^\}]+?) (.+?\})', '\g<1>_\g<2>'],     # deal with spaces in special notes
+        ['(\{[^\}]+?) (.+?\})', '\g<1>_\g<2>'],     # deal with spaces in special notes
+        ['(\{[^\}]+?) (.+?\})', '\g<1>_\g<2>'],     # deal with spaces in special notes
+        ['\(\s+?\{', '{('],     # include ( in the note
         # tag note markers \<<note>\>
-        ['། ([^།»\}]+)«', '།\n<\g<1>>«'],
-        ['<\n(\{.+?)>«', '\g<1>«'],     # fix special note markers
-        ['([ཀགཤ།] )([^།»\{\}]+)«', '\g<1>\n<\g<2>>«'],
+        ['། ([^།»\{\}]+)«', '།\n<m\g<1>>«'],
+        ['<m\n(\}\{.+?)>«', '\g<1>«'],     # fix special note markers
+        ['([ཀགཤ།] )([^།»\{\}]+)«', '\g<1>\n<m\g<2>>«'],
         # ['ཀ ([^།»\{\}]+)«', 'ཀ\n<\g<1>>«'],
         # ['ཤ ([^།»\{\}]+)«', 'ཤ\n<\g<1>>«'],
         # [' ([^ༀ-࿚]+)«', '\n<\g<1>>«'],  # catch ། @ «
         # delete note markers
         # ['<', ''],
 
+        # headers ++<header>++
+        # ['(#.+?e#[^།]+?།)', '#++\g<1>\g<2>++\g<3>«'],   # even
+
         ['»\n', '»'],  # put all the notes split on two lines on a single one
         ['། །\n', '།\n'],
         ]
+
+        # «ཅོ་»«ཞོལ་»གྲག་༡༨) 
 
 
     for p in patterns:
