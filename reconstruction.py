@@ -106,7 +106,7 @@ def rm_markers_ann(text):
     result = ""
     lines = text.splitlines()
     for line in lines:
-        line = re.sub("<<.+?>>", "", line)
+        line = re.sub("<p.+?>", "", line)
         line = re.sub("<.+?>", "#", line)
         result += line + "\n"
     return result
@@ -126,7 +126,7 @@ def get_pg_ann(diff, vol_num):
     pg_no_pattern = f"{vol_num}\S*?(\d+)"
     pg_pat = re.search(pg_no_pattern, diff)
     pg_num = pg_pat.group(1)
-    return f"<<{pg_num},{pg_pat[0]}>>"
+    return f"<p{vol_num}-{pg_num}>"
 
 
 def get_abs_marker(diff):
@@ -411,13 +411,13 @@ def reformatting_body(text):
     """
 
     result = ""
-    page_anns = re.findall("<<\S+>>", text)
-    pages = re.split("<<\S+>>", text)
+    page_anns = re.findall("<p\S+?>", text)
+    pages = re.split("<p\S+?>", text)
     for page, ann in zip(pages, page_anns):
         markers = re.finditer("<\S+?>", page)
         for i, marker in enumerate(markers, 1):
             repl = f"<{i},{marker[0][1:-1]}>"
-            page = page.replace(marker[0], repl)
+            page = page.replace(marker[0], repl, 1)
         result += page + ann
     return result
 
@@ -443,9 +443,9 @@ def add_link(text, image_info):
     lines = text.splitlines()
     for line in lines:
         # detect page numbers and convert to image url
-        if re.search("<<\d+,\d+\S+\d+>>", line):
-            pg_no = re.search("<<(\d+),(\d+\S+\d+)>>", line)
-            if re.search("[0-9]", pg_no.group(2)):
+        if re.search("<p.+?>", line):
+            pg_no = re.search("<p\d+-(\d+)>", line)
+            if re.search("[0-9]", pg_no.group(1)):
                 if len(pg_no.group(1)) > 3:
                     pg_no = int(pg_no.group(1)[:3]) + offset
                 else:
@@ -609,7 +609,7 @@ def filter_diffs(diffs_list, type, image_info):
                     # marker from cur diff, we will consider it as candidate marker.
                     elif diff_:
                         if (
-                            "ང" in left_diff[1][-3:] and diff_ == "སྐེ"
+                            "ང" in left_diff[1][-3:] and diff_ == "སྐེ" or diff_ == "ུ"
                         ):  # an exception case where candidate fails to be marker.
                             continue
                         elif is_midsyl(left_diff[1], right_diff[1]):
@@ -732,10 +732,10 @@ def flow(B_path, A_path, text_type, image_info):
         filtered_diffs = filter_diffs(diffs_list, "body", image_info)
         filtered_diffs_to_yaml(filtered_diffs, base_path)
         new_text = format_diff(filtered_diffs, image_info)
-        # new_text = reformatting_body(new_text)
-        # new_text = add_link(new_text, image_info)
-        new_text = rm_markers_ann(new_text)
-        (base_path / "result.txt").write_text(new_text, encoding="utf-8")
+        new_text = reformatting_body(new_text)
+        new_text = add_link(new_text, image_info)
+        # new_text = rm_markers_ann(new_text)
+        (base_path / "output/result.txt").write_text(new_text, encoding="utf-8")
     elif text_type == "footnote":
         clean_B, clean_A = preprocess_footnote(B, A)
         print("Calculating diffs..")
@@ -745,8 +745,8 @@ def flow(B_path, A_path, text_type, image_info):
         filtered_diffs = filter_footnote_diffs(diffs_list, image_info[1])
         filtered_diffs_to_yaml(filtered_diffs, base_path)
         new_text = format_diff(filtered_diffs, image_info)
-        # new_text = rm_markers_ann(new_text)
-        new_text = reformat_footnote(new_text)
+        new_text = rm_markers_ann(new_text)
+        # new_text = reformat_footnote(new_text)
         (base_path / "result.txt").write_text(new_text, encoding="utf-8")
         # result = apply_diff_footnote(diffs)
         # with open(f"./footnote/footnote_{vol_num}.txt", "w+", encoding="utf-8") as f:
@@ -758,7 +758,7 @@ def flow(B_path, A_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    base_path = Path("./tests/durchen_test1/")
+    base_path = Path("./tests/test2/")
     A_path = base_path / "input" / "a.txt"
     B_path = base_path / "input" / "b.txt"
 
@@ -774,10 +774,10 @@ if __name__ == "__main__":
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
     image_info = [
         "W1PD96682",
-        73,
-        17,
+        74,
+        18,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
-    text_type = "footnote"
+    text_type = "body"
 
     flow(B_path, A_path, text_type, image_info)
