@@ -48,7 +48,8 @@ def preprocessGoogleNotes(text):
         ['([^»]+«)-', '\g<1>»-'],
         ['(«[^་]+?་)([^»])', '\g<1>»\g<2>'],
         # tag pedurma page numbers #<vol-page>#
-        ['(\n[0-9]+?)(([ —=-]+?)|(\n))([0-9]+?\n)', '#\g<1>-\g<5>#'],    # separators FIXME not catching 73-821
+        ['(\n[0-9]+?)((-+?)|(\n))([0-9]+?\n)', '#\g<1>-\g<5>#'],    # separators FIXME not catching 73-821
+        ['([^#]\n+?)-([0-9]+?\n)', '#\g<1>-\g<2>#'],    # 
         # ['([^\d#-])([0-9]{3,10})', '\g<1>#\g<2>#'],    # not well formated
         # ['\d#(\d+?-\d+?)#«', '\g<1>«'],    # clear false positives
         ['([02468])#', '\g<1>e#'],    # even: 
