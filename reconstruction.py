@@ -19,6 +19,7 @@ from pathlib import Path
 from functools import partial
 import yaml
 from diff_match_patch import diff_match_patch
+from preprocess_footnotes import preprocessGoogleNotes, preprocessNamselNotes
 
 
 def preprocess_footnote(B, A):
@@ -415,7 +416,7 @@ def reformatting_body(text):
     result = ""
     page_anns = re.findall("<p\S+?>", text)
     pages = re.split("<p\S+?>", text)
-    for page, ann in zip_longest(pages, page_anns,fillvalue = ''):
+    for page, ann in zip_longest(pages, page_anns, fillvalue=""):
         markers = re.finditer("<\S+?>", page)
         for i, marker in enumerate(markers, 1):
             repl = f"<{i},{marker[0][1:-1]}>"
@@ -740,16 +741,18 @@ def flow(B_path, A_path, text_type, image_info):
         (base_path / f"output/result{image_info[1]}.txt").write_text(new_text, encoding="utf-8")
     elif text_type == "footnote":
         clean_B, clean_A = preprocess_footnote(B, A)
+        # clean_B = preprocessGoogleNotes(clean_B)
+        # clean_A = preprocessNamselNotes(clean_A)
         print("Calculating diffs..")
         diffs = get_diff(clean_B, clean_A)
         diffs_list = list(map(list, diffs))
         diffs_to_yaml(diffs_list, base_path)
         filtered_diffs = filter_footnote_diffs(diffs_list, image_info[1])
         filtered_diffs_to_yaml(filtered_diffs, base_path)
-        new_text = format_diff(filtered_diffs, image_info)
-        new_text = rm_markers_ann(new_text)
-        # new_text = reformat_footnote(new_text)
-        (base_path / "result.txt").write_text(new_text, encoding="utf-8")
+        # new_text = format_diff(filtered_diffs, image_info)
+        # new_text = rm_markers_ann(new_text)
+        # # new_text = reformat_footnote(new_text)
+        # (base_path / "result.txt").write_text(new_text, encoding="utf-8")
         # result = apply_diff_footnote(diffs)
         # with open(f"./footnote/footnote_{vol_num}.txt", "w+", encoding="utf-8") as f:
         #     f.write(result)
@@ -760,9 +763,9 @@ def flow(B_path, A_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    base_path = Path("./input/body_text")
-    A_path = base_path / "input" / "73A.txt"
-    B_path = base_path / "input" / "73B.txt"
+    base_path = Path("./tests/durchen_test1")
+    A_path = base_path / "input" / "a.txt"
+    B_path = base_path / "input" / "b.txt"
 
     # base_path = Path("./input/body_text")
     # A_path = base_path / "input" / "83A.txt"
@@ -780,6 +783,6 @@ if __name__ == "__main__":
         17,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
-    text_type = "body"
+    text_type = "footnote"
 
     flow(B_path, A_path, text_type, image_info)
