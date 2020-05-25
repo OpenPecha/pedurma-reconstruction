@@ -41,6 +41,20 @@ def preprocess_footnote(B, A):
     return clean_B, clean_A
 
 
+def rm_google_ocr_header(text):
+    """Remove header of google ocr
+
+    Args:
+        text (str): google ocr
+
+    Returns:
+        str: header removed
+    """
+    header_pattern = "\n\n\n\n{1,18}.+\n(.{1,30}\n)?(.{1,15}\n)?(.{1,15}\n)?(.{1,15}\n)?"
+    result = re.sub(header_pattern, "\n\n\n", text)
+    return result
+
+
 def get_diff(B, A):
     """Compute diff between target and source using DMP.
 
@@ -212,8 +226,9 @@ def is_midsyl(left_diff, right_diff):
     Returns:
         boolean : True if it is mid syllabus else False
     """
-    if (is_punct(left_diff[-1]) == False) and (is_punct(right_diff[0]) == False):
-        return True
+    if left_diff:
+        if (is_punct(left_diff[-1]) == False) and (is_punct(right_diff[0]) == False):
+            return True
     return False
 
 
@@ -240,9 +255,10 @@ def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type=No
     else:
         if isvowel(right_diff[1][0]):
             result[-1][1] += right_diff[1][0]
-            if right_diff[1][1] == "་":
-                result[-1][1] += "་"
-                diffs[i + 1][1] = diffs[i + 1][1][2:]
+            if len(right_diff[1]) > 1:
+                if right_diff[1][1] == "་":
+                    result[-1][1] += "་"
+                    diffs[i + 1][1] = diffs[i + 1][1][2:]
             else:
                 diffs[i + 1][1] = diffs[i + 1][1][1:]
             result.append([1, diff[1], f"{marker_type}"])
@@ -567,7 +583,7 @@ def reformat_footnote(text):
     return text
 
 
-def filter_diffs(diffs_list, type, image_info):
+def filter_diffs(diffs_yaml_path, type, image_info):
     """Filter diff of text A and text B.
 
     Args:
@@ -578,10 +594,13 @@ def filter_diffs(diffs_list, type, image_info):
     Returns:
         list: filtered diff
     """
+    diffs_yaml = yaml.safe_load(diffs_yaml_path.read_text(encoding="utf-8"))
     result = []
     vol_num = image_info[1]
-    diffs = diffs_list
+    diffs = list(diffs_yaml)
     for i, diff in enumerate(diffs):
+        if i == 165:
+            print("check")
         if diff[0] == 0 or diff[0] == 1:  # in B not in A
             result.append([diff[0], diff[1], ""])
         elif diff[0] == -1:  # in A not in B
@@ -597,7 +616,8 @@ def filter_diffs(diffs_list, type, image_info):
                 diff_ = rm_noise(diff[1])  # removes unwanted new line, space and punct
                 if left_diff[0] == 0 and right_diff[0] == 0:
                     # checks if current diff text is located in middle of a syllebus
-                    if is_midsyl(left_diff[1], right_diff[1]) and get_marker(diff[1]):
+                    print(diffs.index(right_diff), right_diff)
+                    if is_midsyl(left_diff[1], right_diff[1],) and get_marker(diff[1]):
                         handle_mid_syl(
                             result, diffs, left_diff, i, diff, right_diff, marker_type="marker"
                         )
@@ -614,6 +634,7 @@ def filter_diffs(diffs_list, type, image_info):
                             "ང" in left_diff[1][-3:] and diff_ == "སྐེ" or diff_ == "ུ"
                         ):  # an exception case where candidate fails to be marker.
                             continue
+                        # print(diffs.index(right_diff), right_diff)
                         elif is_midsyl(left_diff[1], right_diff[1]):
                             handle_mid_syl(
                                 result,
@@ -630,6 +651,7 @@ def filter_diffs(diffs_list, type, image_info):
                             result.append([1, diff[1], "marker"])
                 elif right_diff[0] == 1:
                     # Check if current diff is located in middle of syllabus or not.
+                    print(diffs.index(right_diff), diff, right_diff)
                     if is_midsyl(left_diff[1], right_diff[1]) and get_marker(diff[1]):
                         handle_mid_syl(
                             result, diffs, left_diff, i, diff, right_diff, marker_type="marker"
@@ -694,6 +716,8 @@ def filter_footnote_diffs(diffs, vol_num):
             if left_diff[0] == 0 and right_diff[0] == 0 and "»" != right_diff[1].strip("་"):
                 if is_note(diff[1]):
                     continue
+                # if re.search('<r.+?>', diff):
+
                 result.append([1, diff_, "marker"])
             elif right_diff[0] == 1 and "»" != left_diff[1].strip("་"):
                 if get_abs_marker(diff[1]):
@@ -727,11 +751,15 @@ def flow(B_path, A_path, text_type, image_info):
 
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
-        print("Calculating diffs...")
-        diffs = get_diff(B, A)
-        diffs_list = list(map(list, diffs))
-        diffs_to_yaml(diffs_list, base_path)
-        filtered_diffs = filter_diffs(diffs_list, "body", image_info)
+        diffs_yaml_path = base_path / "diffs.yaml"
+        if diffs_yaml_path.is_file():
+            pass
+        else:
+            print("Calculating diffs...")
+            diffs = get_diff(B, A)
+            diffs_list = list(map(list, diffs))
+            diffs_to_yaml(diffs_list, base_path)
+        filtered_diffs = filter_diffs(diffs_yaml_path, "body", image_info)
         filtered_diffs_to_yaml(filtered_diffs, base_path)
         new_text = format_diff(filtered_diffs, image_info)
         new_text = reformatting_body(new_text)
@@ -767,8 +795,8 @@ if __name__ == "__main__":
     B_path = base_path / "input" / "b.txt"
 
     # base_path = Path("./input/body_text")
-    # A_path = base_path / "input" / "83A.txt"
-    # B_path = base_path / "input" / "83B.txt"
+    # A_path = base_path / "input" / "73A.txt"
+    # B_path = base_path / "input" / "73B.txt"
 
     # base_path = Path("./input/body_text")
     # A_path = base_path / "cleantext" / "$.txt"
