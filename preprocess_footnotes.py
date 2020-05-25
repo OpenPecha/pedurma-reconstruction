@@ -13,6 +13,7 @@ def derge_page_increment(p_num):
 
     return f"[{page}{side}]"
 
+
 def preprocessGoogleNotes(text):
     """
     this cleans up all note markers
@@ -47,10 +48,11 @@ def preprocessGoogleNotes(text):
         ["([^»]+«)-", "\g<1>»-"],
         ["(«[^་]+?་)([^»])", "\g<1>»\g<2>"],
         # tag pedurma page numbers #<vol-page>#
-
-        ['(\n[0-9]+?)((-+?)|(\n))([0-9]+?\n)', '#\g<1>-\g<5>#'],    # separators FIXME not catching 73-821
-        ['([^#]\n+?)-([0-9]+?\n)', '#\g<1>-\g<2>#'],    # 
-
+        [
+            "(\n[0-9]+?)((-+?)|(\n))([0-9]+?\n)",
+            "#\g<1>-\g<5>#",
+        ],  # separators FIXME not catching 73-821
+        ["([^#]\n+?)-([0-9]+?\n)", "#\g<1>-\g<2>#"],  #
         # ['([^\d#-])([0-9]{3,10})', '\g<1>#\g<2>#'],    # not well formated
         # ['\d#(\d+?-\d+?)#«', '\g<1>«'],    # clear false positives
         ["([02468])#", "\g<1>e#"],  # even:
@@ -86,6 +88,7 @@ def preprocessGoogleNotes(text):
         # ['(#.+?e#[^།]+?།)', '#++\g<1>\g<2>++\g<3>«'],   # even
         ["»\n", "»"],  # put all the notes split on two lines on a single one
         ["། །\n", "།\n"],
+        ["<m.+?>", "4"],  # replace m tag with m only
     ]
 
     # «ཅོ་»«ཞོལ་»གྲག་༡༨)
@@ -176,11 +179,10 @@ def preprocessNamselNotes(text):
         # Add page references to first footnote marker
         # ['([༠-༩]+)([\n\s]*)<([\s]*①)', '\g<2><\g<1>\g<3>'],
         ["»\n([^<])", "»\g<1>"],  # to put all the notes split on two lines on a single one
-
         ["། །\n", "།\n"],
         ["(<[mpr])\n", "\g<1>"],
         ["\n<m\s*>", ""],  # fix multi-syls B
-        ["\n<m(\{[^<>]+?)>", "\g<1>"],  # keep special notes on first line  
+        ["\n<m(\{[^<>]+?)>", "\g<1>"],  # keep special notes on first line
     ]
 
     for p in patterns:
