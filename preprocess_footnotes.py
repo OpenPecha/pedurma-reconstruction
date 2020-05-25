@@ -13,7 +13,6 @@ def derge_page_increment(p_num):
 
     return f"[{page}{side}]"
 
-
 def preprocessGoogleNotes(text):
     """
     this cleans up all note markers
@@ -169,6 +168,7 @@ def preprocessNamselNotes(text):
         ["\n<m([^ >]+?[ཤཀག།] )", "\g<1>\n<m"],  # fix multi-syls A
         ["\n([^།»\{}<>]+)«", "\n<m\g<1>>«"],  # fix ref at line start
         ["> ?([^>«»]+?)«", ">\n<m\g<1>>«"],  # fix ref + marker
+        ["m\s+", "m"],  # delete spaces after m
         ["([^\n])<r", "\g<1>\n<r"],  # fix inline ref
         ["\s([^<>«» ]+?)«", " \n<m\g<1>>«"],  # fix ?
         ["«[^»]+?«ང་»", "«གཡུང་»"],  # fix g.yung
@@ -176,9 +176,11 @@ def preprocessNamselNotes(text):
         # Add page references to first footnote marker
         # ['([༠-༩]+)([\n\s]*)<([\s]*①)', '\g<2><\g<1>\g<3>'],
         ["»\n([^<])", "»\g<1>"],  # to put all the notes split on two lines on a single one
+
         ["། །\n", "།\n"],
         ["(<[mpr])\n", "\g<1>"],
         ["\n<m\s*>", ""],  # fix multi-syls B
+        ["\n<m(\{[^<>]+?)>", "\g<1>"],  # keep special notes on first line  
     ]
 
     for p in patterns:
