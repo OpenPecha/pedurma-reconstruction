@@ -69,18 +69,18 @@ def filter_annotations(annotations, diffs):
     result =[]
     for i, diff in enumerate(diffs):
         if diff[0] == -1:
-            if re.search(a[1], diff[1]):
-                if diff[1] == a[1]:
+            if re.search(a, diff[1]):
+                if diff[1] == a:
                     diff[0] = 1
                     result.append(diff)
-                elif re.match(a[1], diff[1]):
-                    result.append([1, a[1]])    # center
-                    diff[1] = re.sub(f"{a[0]}([^{a[0]}]+)", "\1", diff[1]) # right context
+                elif re.match(a, diff[1]):
+                    result.append([1, a])    # center
+                    diff[1] = re.sub(f"{a}([^{a}]+)", "\1", diff[1]) # right context
                     result.append(diff)
                 else:
-                    result.append([-1, re.sub(f"([^{a[0]}]+){a[0]}([^{a[0]}]+)", "\g<1>", diff[1])]) # left 
-                    result.append([1, re.sub(f"{a[0]}", f"{a[1]}", diff[1])])    # center
-                    diff[1] = re.sub(f"([^{a[0]}]+){a[0]}([^{a[0]}]+)", "\g<2>", diff[1]) # right
+                    result.append([-1, re.sub(f"([^{a}]+?){a}([^{a}]+?)", "\g<1>", diff[1])]) # left 
+                    result.append([1, a])    # center
+                    diff[1] = re.sub(f"([^{a}]+){a}([^{a}]+)", "\g<2>", diff[1]) # right
                     result.append(diff)
             else:
                 result.append(diff)
@@ -119,10 +119,7 @@ if __name__ == "__main__":
     base_path = Path("input/body_text/input")
 
     source = base_path / "73G.txt"
-    annotations = [
-        ["#", "#"],
-        ["\n", "#"],
-        ]
+    annotations = ["#", "\n"]
     target = base_path / "73A.txt"
 
     transfer(source, annotations, target)
