@@ -394,7 +394,7 @@ def get_value(footnote_marker):
     return value
 
 
-def format_diff(diffs, image_info, type_=None):
+def format_diff(filter_diffs_yaml_path, image_info, type_=None):
     """Format list of diff on target text.
 
     Args:
@@ -404,12 +404,14 @@ def format_diff(diffs, image_info, type_=None):
     Returns:
         str: target text with transfered annotations with markers.
     """
+    filtered_diffs_yaml = yaml.safe_load(filter_diffs_yaml_path.read_text(encoding="utf-8"))
+    diffs = list(filtered_diffs_yaml)
     vol_num = image_info[1]
     result = ""
     for diff_type, diff_text, diff_tag in diffs:
         if diff_type == 0:
             result += diff_text
-        else:
+        elif diff_type == 1:
             if diff_tag:
                 if diff_tag == "pedurma-pagination" and type_ == "body":
                     result += get_pg_ann(diff_text, vol_num)
@@ -791,7 +793,7 @@ def postprocess_footnote(footnote):
     start = int(first_ref.translate(table))
     print(start)
     for walker, (page, page_ref) in enumerate(zip_longest(pages, page_refs, fillvalue=""), start):
-        markers = re.finditer("<m.+?>", page)
+        markers = re.finditer("<.+?>", page)
         marker_l = []
         for i, marker in enumerate(markers, 1):
             repl = f"<{i},{marker[0][1:-1]}>"
@@ -807,6 +809,34 @@ def postprocess_footnote(footnote):
                     marker_l.append(marker)
         result.append(marker_l)
         # result[f"{walker:03}-{page_ref[1:-1]}"] = marker_list[1:]
+    return result
+
+
+def merge_footnote_per_page(page, foot_notes):
+    markers = re.finditer("<.+?>", page)
+    for i, (marker, foot_note) in enumerate(zip(markers, foot_notes[1:])):
+        marker_parts = marker[0][1:-1].split(",")
+        body_incremental = marker_parts[0]
+        body_value = marker_parts[1]
+        footnote_parts = foot_note.split(">")
+        footnote_incremental = footnote_parts[0].split(",")[0][1:]
+        footnote_value = footnote_parts[0].split(",")[1]
+        note = footnote_parts[1]
+        repl = f"<{body_incremental},{body_value};{footnote_incremental},{footnote_value},{note}>"
+        page = page.replace(marker[0], repl, 1)
+    result = page + f"/{foot_notes[0]}/"
+    return result
+
+
+def merge_footnote(body_text_path, footnote_yaml_path):
+    body_text = body_text_path.read_text()
+    footnotes = yaml.safe_load(footnote_yaml_path.read_text(encoding="utf-8"))
+    footnotes = list(footnotes)
+    pages = re.split("<p.+?>", body_text)[:-1]
+    result = ""
+    for i, (page, footnote) in enumerate(zip(pages, footnotes)):
+        result += format_footnote(page, footnote)
+        result += page_ann[i]
     return result
 
 
@@ -833,6 +863,7 @@ def flow(N_path, G_path, text_type, image_info):
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
         diffs_yaml_path = base_path / "diffs.yaml"
+        filtered_diffs_yaml_path = base_path / "filtered_diffs.yaml"
         if diffs_yaml_path.is_file():
             pass
         else:
@@ -840,10 +871,13 @@ def flow(N_path, G_path, text_type, image_info):
             diffs = get_diff(N, G)
             diffs_list = list(map(list, diffs))
             diffs_to_yaml(diffs_list, base_path)
-        print("Filtering diffs...")
-        filtered_diffs = filter_diffs(diffs_yaml_path, "body", image_info)
-        filtered_diffs_to_yaml(filtered_diffs, base_path)
-        new_text = format_diff(filtered_diffs, image_info, type_="body")
+        if filtered_diffs_yaml_path.is_file():
+            pass
+        else:
+            print("Filtering diffs...")
+            filtered_diffs = filter_diffs(diffs_yaml_path, "body", image_info)
+            filtered_diffs_to_yaml(filtered_diffs, base_path)
+        new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="body")
         new_text = reformatting_body(new_text)
         # new_text = add_link(new_text, image_info)
         # new_text = rm_markers_ann(new_text)
@@ -871,13 +905,13 @@ def flow(N_path, G_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    base_path = Path("./tests/durchen_test1")
-    G_path = base_path / "input" / "G.txt"
-    N_path = base_path / "input" / "N.txt"
+    # base_path = Path("./tests/durchen_test1")
+    # G_path = base_path / "input" / "G.txt"
+    # N_path = base_path / "input" / "N.txt"
 
-    # base_path = Path("./tests/test3")
-    # G_path = base_path / "input" / "base.txt"
-    # N_path = base_path / "input" / "nam.txt"
+    base_path = Path("./tests/test3")
+    G_path = base_path / "input" / "base.txt"
+    N_path = base_path / "input" / "nam.txt"
 
     # base_path = Path("input/footnote_text/")
     # G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
@@ -903,6 +937,6 @@ if __name__ == "__main__":
         17,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
-    text_type = "footnote"
+    text_type = "body"
 
     flow(N_path, G_path, text_type, image_info)
