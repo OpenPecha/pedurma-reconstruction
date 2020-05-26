@@ -245,28 +245,38 @@ def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type=No
         marker_type (str): marker type can be marker or candidate marker
     """
     # make it marker if marker found  (revision)
+    diff_ = rm_noise(diff[1])
     if left_diff[1][-1] == " ":
         lasttwo = left_diff[1][-2:]
         result[-1][1] = result[-1][1][:-2]
-        result.append([1, diff[1], f"{marker_type}"])
+        result.append([1, diff_, f"{marker_type}"])
         diffs[i + 1][1] = lasttwo + diffs[i + 1][1]
     elif right_diff[1][0] == " ":
-        result.append([1, diff[1], f"{marker_type}"])
+        result.append([1, diff_, f"{marker_type}"])
     else:
         if isvowel(right_diff[1][0]):
             result[-1][1] += right_diff[1][0]
             if len(right_diff[1]) > 1:
-                if right_diff[1][1] == "་":
-                    result[-1][1] += "་"
-                    diffs[i + 1][1] = diffs[i + 1][1][2:]
-            else:
-                diffs[i + 1][1] = diffs[i + 1][1][1:]
-            result.append([1, diff[1], f"{marker_type}"])
+                syls = right_diff[1].split("་")
+                first_syl = syls[0][1:] + "་"
+                result[-1][1] += first_syl
+                diffs[i + 1][1] = diffs[i + 1][1][len(first_syl) :]
+            diffs[i + 1][1] = diffs[i + 1][1][1:]
+            result.append([1, diff_, f"{marker_type}"])
         else:
             lastsyl = left_diff[1].split("་")[-1]
             result[-1][1] = result[-1][1][: -len(lastsyl)]
-            result.append([1, diff[1], f"{marker_type}"])
+            result.append([1, diff_, f"{marker_type}"])
             diffs[i + 1][1] = lastsyl + diffs[i + 1][1]
+
+
+def handle_google_marker(diff, result):
+    extras = re.sub("#", "", diff)
+    if result:
+        result[-1][1] += extras
+    else:
+        result.append([1, extras, ""])
+    result.append([1, "#", "marker"])
 
 
 def tseg_shifter(result, diffs, left_diff, i, right_diff):
@@ -620,8 +630,13 @@ def filter_diffs(diffs_yaml_path, type, image_info):
     vol_num = image_info[1]
     diffs = list(diffs_yaml)
     for i, diff in enumerate(diffs):
-        if diff[0] == 0 or diff[0] == 1:  # in B not in A
+        if diff[0] == 0:  # in B not in A
             result.append([diff[0], diff[1], ""])
+        elif diff[0] == 1:
+            if re.search("#", diff[1]):
+                handle_google_marker(diff[1], result)
+            else:
+                result.append([diff[0], diff[1], ""])
         elif diff[0] == -1:  # in A not in B
             if re.search(
                 f"{vol_num}་?\D་?\d+", diff[1]
@@ -644,7 +659,7 @@ def filter_diffs(diffs_yaml_path, type, image_info):
                         # Since cur diff is not mid syl, hence if any right diff starts with tseg will
                         # be shift to left last as there are no marker before tseg.
                         tseg_shifter(result, diffs, left_diff, i, right_diff)
-                        result.append([1, diff[1], "marker"])
+                        result.append([1, diff_, "marker"])
                     # Since diff type of -1 is from namsel and till now we are not able to detect
                     # marker from cur diff, we will consider it as candidate marker.
                     elif diff_:
@@ -666,7 +681,7 @@ def filter_diffs(diffs_yaml_path, type, image_info):
 
                         else:
                             tseg_shifter(result, diffs, left_diff, i, right_diff)
-                            result.append([1, diff[1], "marker"])
+                            result.append([1, diff_, "marker"])
                 elif right_diff[0] == 1:
                     # Check if current diff is located in middle of syllabus or not.
                     if is_midsyl(left_diff[1], right_diff[1]) and get_marker(diff[1]):
@@ -677,7 +692,9 @@ def filter_diffs(diffs_yaml_path, type, image_info):
                         # Since cur diff is not mid syl, hence if any right diff starts with tseg will
                         # be shift to left last as there are no marker before tseg.
                         tseg_shifter(result, diffs, left_diff, i, right_diff)
-                        result.append([1, diff[1], "marker"])
+                        result.append([1, diff_, "marker"])
+                        if "#" in right_diff[1]:
+                            diffs[i + 1][1] = diffs[i + 1][1].replace("#", "")
                     else:
                         if diff_ != "" and right_diff[1] in ["\n", " "]:
                             if (
@@ -695,7 +712,10 @@ def filter_diffs(diffs_yaml_path, type, image_info):
                                     marker_type="marker",
                                 )
                             else:
-                                result.append([1, diff[1], "marker"])
+                                tseg_shifter(result, diffs, left_diff, i, right_diff)
+                                result.append([1, diff_, "marker"])
+                                if "#" in right_diff[1]:
+                                    diffs[i + 1][1] = diffs[i + 1][1].replace("#", "")
                     # if diff_ is not empty and right diff is ['\n', ' '] then make it candidate markrer
 
     filter_diffs = result
@@ -763,10 +783,10 @@ def postprocess_footnote(footnote):
     """
     result = {}
     page_refs = re.findall("<r.+?>", footnote)
-    pages = re.split("<r.+?>", footnote)
+    pages = re.split("<r.+?>", footnote)[1:]
 
     first_ref = page_refs[0]
-    table = first_ref.maketrans('༡༢༣༤༥༦༧༨༩༠', '1234567890', '<r>')
+    table = first_ref.maketrans("༡༢༣༤༥༦༧༨༩༠", "1234567890", "<r>")
     start = int(first_ref.translate(table))
     print(start)
     for walker, (page, page_ref) in enumerate(zip_longest(pages, page_refs, fillvalue=""), start):
@@ -774,7 +794,7 @@ def postprocess_footnote(footnote):
         for i, marker in enumerate(markers, 1):
             repl = f"<{i},{marker[0][1:-1]}>"
             page = page.replace(marker[0], repl, 1)
-        marker_list = page.splitlines()
+        marker_list = [footnote.strip() for footnote in page.splitlines()]
         result[f"{walker:03}-{page_ref[1:-1]}"] = marker_list[1:]
     return result
 
@@ -825,11 +845,9 @@ def flow(N_path, G_path, text_type, image_info):
         diffs = get_diff(clean_N, clean_G)
         diffs_list = list(map(list, diffs))
         diffs_to_yaml(diffs_list, base_path)
-        filtered_diffs = filter_footnote_diffs(diffs_list, image_info[1], type_="footnote")
+        filtered_diffs = filter_footnote_diffs(diffs_list, image_info[1])
         filtered_diffs_to_yaml(filtered_diffs, base_path)
-        # new_text = format_diff(filtered_diffs, image_info)
-        formatted_yaml = postprocess_footnote(filtered_diffs)
-        footnote_to_yaml(formatted_yaml, base_path)
+        new_text = format_diff(filtered_diffs, image_info, type_="footnote")
         # new_text = rm_markers_ann(new_text)
         new_text = reformat_footnote(new_text)
         formatted_yaml = postprocess_footnote(new_text)
@@ -842,9 +860,13 @@ def flow(N_path, G_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    base_path = Path("./tests/durchen_test1")
-    G_path = base_path / "input" / "G.txt"
-    N_path = base_path / "input" / "N.txt"
+    # base_path = Path("./tests/durchen_test1")
+    # G_path = base_path / "input" / "G.txt"
+    # N_path = base_path / "input" / "N.txt"
+
+    base_path = Path("./tests/test3")
+    G_path = base_path / "input" / "base.txt"
+    N_path = base_path / "input" / "nam.txt"
 
     # base_path = Path("input/footnote_text/")
     # G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
@@ -870,6 +892,6 @@ if __name__ == "__main__":
         17,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
-    text_type = "footnote"
+    text_type = "body"
 
     flow(N_path, G_path, text_type, image_info)
