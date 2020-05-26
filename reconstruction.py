@@ -879,7 +879,7 @@ def flow(N_path, G_path, text_type, image_info):
             filtered_diffs_to_yaml(filtered_diffs, base_path)
         new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="body")
         new_text = reformatting_body(new_text)
-        # new_text = add_link(new_text, image_info)
+        new_text = add_link(new_text, image_info)
         # new_text = rm_markers_ann(new_text)
         (base_path / f"output/result{image_info[1]}.txt").write_text(new_text, encoding="utf-8")
     elif text_type == "footnote":
@@ -909,17 +909,17 @@ if __name__ == "__main__":
     # G_path = base_path / "input" / "G.txt"
     # N_path = base_path / "input" / "N.txt"
 
-    base_path = Path("./tests/test3")
-    G_path = base_path / "input" / "base.txt"
-    N_path = base_path / "input" / "nam.txt"
+    # base_path = Path("./tests/test3")
+    # G_path = base_path / "input" / "base.txt"
+    # N_path = base_path / "input" / "nam.txt"
 
     # base_path = Path("input/footnote_text/")
     # G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
     # N_path = base_path / "namselOCR_text" / "73durchen-namsel_num.txt"
 
-    # base_path = Path("./input/body_text")
-    # G_path = base_path / "input" / "73A.txt"
-    # N_path = base_path / "input" / "73B.txt"
+    base_path = Path("./input/body_text")
+    G_path = base_path / "input" / "73A_transfered.txt"
+    N_path = base_path / "input" / "73B.txt"
 
     # base_path = Path("./input/body_text")
     # G_path = base_path / "input" / "74A-nam.txt"
@@ -934,7 +934,7 @@ if __name__ == "__main__":
     image_info = [
         "W1PD96682",
         73,
-        17,
+        16,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
     text_type = "body"
