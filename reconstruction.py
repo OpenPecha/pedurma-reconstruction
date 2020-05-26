@@ -835,7 +835,7 @@ def merge_footnote(body_text_path, footnote_yaml_path):
     pages = re.split("<p.+?>", body_text)[:-1]
     result = ""
     for i, (page, footnote) in enumerate(zip(pages, footnotes)):
-        result += format_footnote(page, footnote)
+        result += merge_footnote_per_page(page, footnote)
         result += page_ann[i]
     return result
 
@@ -879,7 +879,7 @@ def flow(N_path, G_path, text_type, image_info):
             filtered_diffs_to_yaml(filtered_diffs, base_path)
         new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="body")
         new_text = reformatting_body(new_text)
-        new_text = add_link(new_text, image_info)
+        # new_text = add_link(new_text, image_info)
         # new_text = rm_markers_ann(new_text)
         (base_path / f"output/result{image_info[1]}.txt").write_text(new_text, encoding="utf-8")
     elif text_type == "footnote":
@@ -900,6 +900,11 @@ def flow(N_path, G_path, text_type, image_info):
         (base_path / "output/result.txt").write_text(new_text, encoding="utf-8")
     else:
         print("Type not found")
+    body_text_path = Path("./input/body_text/output/result73.txt")
+    footnote_yaml_path = Path("./input/footnote_text/footnote.yaml")
+    merge_result = merge_footnote(body_text_path, footnote_yaml_path)
+    new_text = add_link(merge_result, image_info)
+    Path("./input/body_text/output/merge_result73.txt").write_text(merge_result, encoding="utf-8")
     print("Done")
 
 
@@ -909,11 +914,11 @@ if __name__ == "__main__":
     # G_path = base_path / "input" / "G.txt"
     # N_path = base_path / "input" / "N.txt"
 
-    # base_path = Path("./tests/test3")
-    # G_path = base_path / "input" / "base.txt"
-    # N_path = base_path / "input" / "nam.txt"
+    # base_path = Path("./tests/test4")
+    # G_path = base_path / "input" / "a.txt"
+    # N_path = base_path / "input" / "b.txt"
 
-    # base_path = Path("input/footnote_text/")
+    # base_path = Path("./input/footnote_text/")
     # G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
     # N_path = base_path / "namselOCR_text" / "73durchen-namsel_num.txt"
 
