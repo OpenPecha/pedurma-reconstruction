@@ -299,6 +299,7 @@ if __name__ == "__main__":
 
     googlePath = basePath / "googleOCR_text" / "73durchen-google.txt"
     namselPath = basePath / "namselOCR_text" / "73durchen-namsel.txt"
+
     # derge page on which the text starts
     init_num = "[135a]"
 
