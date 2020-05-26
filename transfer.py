@@ -63,25 +63,26 @@ def format(diffs):
 
 @timed(unit='s', name='filter_annotations: ')
 def filter_annotations(annotations, diffs):
-    a = annotations[0]
+    a = annotations[1]
 
     # works for simple annotation: 1 per diff string, not split 
     result =[]
     for i, diff in enumerate(diffs):
+        if diff[0] != -1:
+            if diff[0] == 1:
+                diff[1] = re.sub(a, '', diff[1])
         if diff[0] == -1:
             if re.search(a, diff[1]):
                 if diff[1] == a:
                     diff[0] = 1
                     result.append(diff)
-                elif re.match(a, diff[1]):
-                    result.append([1, a])    # center
-                    diff[1] = re.sub(f"{a}([^{a}]+)", "\1", diff[1]) # right context
-                    result.append(diff)
                 else:
-                    result.append([-1, re.sub(f"([^{a}]+?){a}([^{a}]+?)", "\g<1>", diff[1])]) # left 
-                    result.append([1, a])    # center
-                    diff[1] = re.sub(f"([^{a}]+){a}([^{a}]+)", "\g<2>", diff[1]) # right
-                    result.append(diff)
+                    split_string = re.split(f'({a})', diff[1])
+                    for chunk in split_string:
+                        if chunk == a:
+                            result.append([1, chunk])
+                        else:
+                            result.append([-1, chunk])
             else:
                 result.append(diff)
         else:
@@ -112,7 +113,6 @@ def transfer(source_path, annotations, target_path):
     formated_path = target_path.parent / f'{target_path.stem}_transfered.txt'
     formated = format(edited)
     formated_path.write_text(formated, encoding="utf-8")
-
 
 
 if __name__ == "__main__":
