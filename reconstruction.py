@@ -754,30 +754,17 @@ def postprocess_footnote(footnote):
     result = {}
     page_refs = re.findall("<r.+?>", footnote)
     pages = re.split("<r.+?>", footnote)
-    offset = page_refs[0][2:-1]
-    # FIXME first ref is not detected
-    translation = {
-        "༡": "1",
-        "༢": "2",
-        "༣": "3",
-        "༤": "4",
-        "༥": "5",
-        "༦": "6",
-        "༧": "7",
-        "༨": "8",
-        "༩": "9",
-        "༠": "0",
-    }
-    # FIXME translation need improvement
-    start = int(translation.get(offset)) - 1
+    first_ref = page_refs[0]
+    table = first_ref.maketrans('༡༢༣༤༥༦༧༨༩༠', '1234567890', '<r>')
+    start = int(first_ref.translate(table))
     print(start)
     for walker, (page, page_ref) in enumerate(zip_longest(pages, page_refs, fillvalue=""), start):
-        markers = re.finditer("<.+?>", page)
+        markers = re.finditer("<m.+?>", page)
         for i, marker in enumerate(markers, 1):
             repl = f"<{i},{marker[0][1:-1]}>"
             page = page.replace(marker[0], repl, 1)
         marker_list = page.splitlines()
-        result[f"{walker:03}{page_ref[1:-1]}"] = marker_list[1:]
+        result[f"{walker:03}-{page_ref[1:-1]}"] = marker_list[1:]
     return result
 
 
@@ -828,8 +815,9 @@ def flow(N_path, G_path, text_type, image_info):
         diffs_to_yaml(diffs_list, base_path)
         filtered_diffs = filter_footnote_diffs(diffs_list, image_info[1])
         filtered_diffs_to_yaml(filtered_diffs, base_path)
-        new_text = format_diff(filtered_diffs, image_info)
-        formatted_yaml = postprocess_footnote(new_text)
+        # new_text = format_diff(filtered_diffs, image_info)
+
+        formatted_yaml = postprocess_footnote(filtered_diffs)
         footnote_to_yaml(formatted_yaml, base_path)
         # new_text = rm_markers_ann(new_text)
         new_text = reformat_footnote(new_text)
@@ -844,6 +832,10 @@ if __name__ == "__main__":
     base_path = Path("./tests/durchen_test1")
     G_path = base_path / "input" / "G.txt"
     N_path = base_path / "input" / "N.txt"
+
+    # base_path = Path("input/footnote_text/")
+    # G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
+    # N_path = base_path / "namselOCR_text" / "73durchen-namsel_num.txt"
 
     # base_path = Path("./input/body_text")
     # A_path = base_path / "input" / "73A.txt"
