@@ -28,15 +28,14 @@ def get_diffs(A, B):
     return diffs_list
 
 @timed(unit='s', name='to_yaml: ')
-def to_yaml(list_, target_path, type=None):
+def to_yaml(list_, path, type=None):
     """Dump list to yaml and write the yaml to a file on mentioned path.
     Args:
         list_ (list): list
         base_path (path): base path object
-        type (string): 
     """
     list_yaml = yaml.safe_dump(list_, allow_unicode=True)
-    list_yaml_path = target_path.parent / f'{type}.yml'
+    list_yaml_path = path
     list_yaml_path.write_text(list_yaml, encoding="utf-8")
     print(f"{type} saved")
 
@@ -66,24 +65,22 @@ def format(diffs):
 def filter_annotations(annotations, diffs):
     a = annotations[0]
 
-    # simple annotation: 1 per diff string, not split 
-
+    # works for simple annotation: 1 per diff string, not split 
     result =[]
     for i, diff in enumerate(diffs):
-        print(i)
         if diff[0] == -1:
-            if re.search(a, diff[1]):
-                if diff[1] == a:
+            if re.search(a[1], diff[1]):
+                if diff[1] == a[1]:
                     diff[0] = 1
                     result.append(diff)
-                elif re.match(a, diff[1]):
-                    result.append([1, a])    # center
-                    diff[1] = re.sub(f"{a}([^{a}]+)", "\1", diff[1]) # right context
+                elif re.match(a[1], diff[1]):
+                    result.append([1, a[1]])    # center
+                    diff[1] = re.sub(f"{a[0]}([^{a[0]}]+)", "\1", diff[1]) # right context
                     result.append(diff)
                 else:
-                    result.append([-1, re.sub(f"([^{a}]+){a}([^{a}]+)", "\g<1>", diff[1])]) # left 
-                    result.append([1, a])    # center
-                    diff[1] = re.sub(f"([^{a}]+){a}([^{a}]+)", "\g<2>", diff[1]) # right
+                    result.append([-1, re.sub(f"([^{a[0]}]+){a[0]}([^{a[0]}]+)", "\g<1>", diff[1])]) # left 
+                    result.append([1, re.sub(f"{a[0]}", f"{a[1]}", diff[1])])    # center
+                    diff[1] = re.sub(f"([^{a[0]}]+){a[0]}([^{a[0]}]+)", "\g<2>", diff[1]) # right
                     result.append(diff)
             else:
                 result.append(diff)
@@ -97,22 +94,22 @@ def transfer(source_path, annotations, target_path):
     source = source_path.read_text(encoding="utf-8")
     target = target_path.read_text(encoding="utf-8")
 
-    raw_yaml_path = target_path.parent / 'raw.yml'
+    raw_yaml_path = target_path.parent / f'{target_path.stem}_raw.yml'
 
     if raw_yaml_path.is_file():
         diffs = from_yaml(raw_yaml_path)
         pass
     else:
         diffs = get_diffs(source, target)
-        to_yaml(diffs, target_path, 'raw')
+        to_yaml(diffs, raw_yaml_path)
     
-    edit_yaml_path = target_path.parent / 'edit.yml'
+    edit_yaml_path = target_path.parent / f'{target_path.stem}_edit.yml'
 
     filtered = filter_annotations(annotations, diffs)
-    to_yaml(filtered, target_path, 'edit')
+    to_yaml(filtered, edit_yaml_path)
     edited = from_yaml(edit_yaml_path)
 
-    formated_path = target_path.parent / 'transfered.txt'
+    formated_path = target_path.parent / f'{target_path.stem}_transfered.txt'
     formated = format(edited)
     formated_path.write_text(formated, encoding="utf-8")
 
@@ -122,7 +119,10 @@ if __name__ == "__main__":
     base_path = Path("input/body_text/input")
 
     source = base_path / "73G.txt"
-    annotations = ["#"]
+    annotations = [
+        ["#", "#"],
+        ["\n", "#"],
+        ]
     target = base_path / "73A.txt"
 
     transfer(source, annotations, target)
