@@ -781,7 +781,8 @@ def postprocess_footnote(footnote):
     Returns:
         dict: key as page ref and value as footnote in that page
     """
-    result = {}
+    result = []
+
     page_refs = re.findall("<r.+?>", footnote)
     pages = re.split("<r.+?>", footnote)[1:]
 
@@ -791,11 +792,21 @@ def postprocess_footnote(footnote):
     print(start)
     for walker, (page, page_ref) in enumerate(zip_longest(pages, page_refs, fillvalue=""), start):
         markers = re.finditer("<m.+?>", page)
+        marker_l = []
         for i, marker in enumerate(markers, 1):
             repl = f"<{i},{marker[0][1:-1]}>"
             page = page.replace(marker[0], repl, 1)
         marker_list = [footnote.strip() for footnote in page.splitlines()]
-        result[f"{walker:03}-{page_ref[1:-1]}"] = marker_list[1:]
+        marker_list[0] = f"{walker:03}-{page_ref[1:-1]}"
+        # Removes the noise marker without footnote
+        for marker in marker_list:
+            if re.search("<.+?>(.+?)", marker):
+                marker_l.append(marker)
+            else:
+                if "<" not in marker:
+                    marker_l.append(marker)
+        result.append(marker_l)
+        # result[f"{walker:03}-{page_ref[1:-1]}"] = marker_list[1:]
     return result
 
 
@@ -860,13 +871,13 @@ def flow(N_path, G_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    # base_path = Path("./tests/durchen_test1")
-    # G_path = base_path / "input" / "G.txt"
-    # N_path = base_path / "input" / "N.txt"
+    base_path = Path("./tests/durchen_test1")
+    G_path = base_path / "input" / "G.txt"
+    N_path = base_path / "input" / "N.txt"
 
-    base_path = Path("./tests/test3")
-    G_path = base_path / "input" / "base.txt"
-    N_path = base_path / "input" / "nam.txt"
+    # base_path = Path("./tests/test3")
+    # G_path = base_path / "input" / "base.txt"
+    # N_path = base_path / "input" / "nam.txt"
 
     # base_path = Path("input/footnote_text/")
     # G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
@@ -892,6 +903,6 @@ if __name__ == "__main__":
         17,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
-    text_type = "body"
+    text_type = "footnote"
 
     flow(N_path, G_path, text_type, image_info)
