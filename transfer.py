@@ -5,7 +5,7 @@ from pathlib import Path
 from functools import partial
 import yaml
 from diff_match_patch import diff_match_patch
-from preprocess_footnotes import preprocessGoogleNotes, preprocessNamselNotes
+from preprocess import preprocess_google_notes, preprocess_namsel_notes
 from horology import timed
 
 

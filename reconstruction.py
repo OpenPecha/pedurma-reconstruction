@@ -1,3 +1,5 @@
+
+
 """
 Pedurma Footnote Reconstruction
 Footnote reconstruction script for the ocred katen pedurma using annotation transfer with 
@@ -6,11 +8,6 @@ This script allows to transfer a specific set of annotations(footnotes and footn
 from text A(OCRed etext) to text B(clean etext). We first compute a diff between  texts 
 A and B, then filter the annotations(dmp diffs) we want to transfer and then apply them to 
 text B.
-
-Tibetan alphabet:
-- 
-
-
 """
 import re
 from itertools import zip_longest
@@ -19,7 +16,7 @@ from pathlib import Path
 from functools import partial
 import yaml
 from diff_match_patch import diff_match_patch
-from preprocess_footnotes import preprocessGoogleNotes, preprocessNamselNotes
+from preprocess import preprocess_google_notes, preprocess_namsel_notes
 from horology import timed
 
 
@@ -621,6 +618,7 @@ def reformat_footnote(text):
     return text
 
 
+@timed(unit='min')
 def filter_diffs(diffs_yaml_path, type, image_info):
     """Filter diff of text A and text B.
 
@@ -877,7 +875,8 @@ def flow(N_path, G_path, text_type, image_info):
     if text_type == "body":
         diffs_yaml_path = base_path / "diffs.yaml"
         filtered_diffs_yaml_path = base_path / "filtered_diffs.yaml"
-        if diffs_yaml_path.is_file():
+        # if diffs_yaml_path.is_file():
+        if 0 == 1:
             pass
         else:
             print("Calculating diffs...")
@@ -896,9 +895,10 @@ def flow(N_path, G_path, text_type, image_info):
         diffs_yaml_path = base_path / "diffs.yaml"
         filtered_diffs_yaml_path = base_path / "filtered_diffs.yaml"
         G = rm_google_ocr_header(G)
-        clean_G = preprocessGoogleNotes(G)
-        clean_N = preprocessNamselNotes(N)
-        if diffs_yaml_path.is_file():
+        clean_G = preprocess_google_notes(G)
+        clean_N = preprocess_namsel_notes(N)
+        # if diffs_yaml_path.is_file():
+        if 0 == 1:
             pass
         else:
             print("Calculating diffs..")
@@ -932,25 +932,18 @@ if __name__ == "__main__":
     # G_path = base_path / "input" / "G.txt"
     # N_path = base_path / "input" / "N.txt"
 
-    # base_path = Path("./tests/test4")
-    # G_path = base_path / "input" / "a.txt"
-    # N_path = base_path / "input" / "b.txt"
-
     base_path = Path("./input/footnote_text/")
     G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
     N_path = base_path / "namselOCR_text" / "73durchen-namsel_num.txt"
 
-    # base_path = Path("./input/body_text")
-    # G_path = base_path / "input" / "73A_transfered.txt"
-    # N_path = base_path / "input" / "73B.txt"
+    base_path = Path("./input/body_text")
+    G_path = base_path / "input" / "73A_transfered.txt"
+    N_path = base_path / "input" / "73B.txt"
 
     # base_path = Path("./input/body_text")
     # G_path = base_path / "input" / "74A-nam.txt"
     # N_path = base_path / "input" / "74A-der.txt"
 
-    # base_path = Path("./input/body_text")
-    # A_path = base_path / "cleantext" / "$.txt"
-    # B_path = base_path / "ocred_text" / "v073.txt"
 
     # only works text by text or note by note for now
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
@@ -960,6 +953,6 @@ if __name__ == "__main__":
         16,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
-    text_type = "footnote"
+    text_type = "body"
 
     flow(N_path, G_path, text_type, image_info)
