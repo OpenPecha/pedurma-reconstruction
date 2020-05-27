@@ -154,10 +154,9 @@ def get_abs_marker(diff):
     """
     marker_ = ""
     patterns = [
-        "[①-⑳]",
+        "[①-⓪]",
         "[༠-༩]+",
         "[0-9]+",
-        "⓪",
     ]
     for pattern in patterns:
         if re.search(pattern, diff):
@@ -324,10 +323,10 @@ def is_circle_number(footnote_marker):
         str: number inside the circle
     """
     value = ""
-    number = re.search("[①-⑳]|⓪", footnote_marker)
+    number = re.search("[①-⓪]", footnote_marker)
     if number:
         circle_num = {
-            "⓪":'0',
+            "⓪": "0",
             "①": "1",
             "②": "2",
             "③": "3",
@@ -564,14 +563,7 @@ def is_note(diff):
         boolean: True if diff text is note else False.
     """
     flag = True
-    patterns = [
-        "[①-⑳]",
-        "[༠-༩]",
-        "\)",
-        "\(",
-        "\d",
-        "⓪"
-    ]
+    patterns = ["[①-⑳]", "[༠-༩]", "\)", "\(", "\d", "⓪"]
     for pattern in patterns:
         if re.search(pattern, diff):
             flag = False
