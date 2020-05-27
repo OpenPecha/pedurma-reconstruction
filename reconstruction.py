@@ -341,6 +341,12 @@ def is_circle_number(footnote_marker):
             "⑫": "12",
             "⑬": "13",
             "⑭": "14",
+            "⑮": "15",
+            "⑯": "16",
+            "⑰": "17",
+            "⑱": "18",
+            "⑲": "19",
+            "⑳": "20",
         }
         value = circle_num.get(number[0])
     return value
