@@ -1,4 +1,10 @@
 .DS_Store
+.pypyenv/
+__pycache__/
+
+
+
+
 .huskyrc.json
 out
 .vscode/
