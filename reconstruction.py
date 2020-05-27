@@ -871,25 +871,26 @@ def flow(N_path, G_path, text_type, image_info):
             diffs = get_diff(N, G)
             diffs_list = list(map(list, diffs))
             diffs_to_yaml(diffs_list, base_path)
-        if filtered_diffs_yaml_path.is_file():
-            pass
-        else:
-            print("Filtering diffs...")
-            filtered_diffs = filter_diffs(diffs_yaml_path, "body", image_info)
-            filtered_diffs_to_yaml(filtered_diffs, base_path)
+        print("Filtering diffs...")
+        filtered_diffs = filter_diffs(diffs_yaml_path, "body", image_info)
+        filtered_diffs_to_yaml(filtered_diffs, base_path)
         new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="body")
         new_text = reformatting_body(new_text)
         # new_text = add_link(new_text, image_info)
         # new_text = rm_markers_ann(new_text)
         (base_path / f"output/result{image_info[1]}.txt").write_text(new_text, encoding="utf-8")
     elif text_type == "footnote":
+        diffs_yaml_path = base_path / "diffs.yaml"
         G = rm_google_ocr_header(G)
         clean_G = preprocessGoogleNotes(G)
         clean_N = preprocessNamselNotes(N)
-        print("Calculating diffs..")
-        diffs = get_diff(clean_N, clean_G)
-        diffs_list = list(map(list, diffs))
-        diffs_to_yaml(diffs_list, base_path)
+        if diffs_yaml_path.is_file():
+            pass
+        else:
+            print("Calculating diffs..")
+            diffs = get_diff(clean_N, clean_G)
+            diffs_list = list(map(list, diffs))
+            diffs_to_yaml(diffs_list, base_path)
         filtered_diffs = filter_footnote_diffs(diffs_list, image_info[1])
         filtered_diffs_to_yaml(filtered_diffs, base_path)
         new_text = format_diff(filtered_diffs, image_info, type_="footnote")
@@ -942,6 +943,6 @@ if __name__ == "__main__":
         16,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
 
-    text_type = "body"
+    text_type = "footnote"
 
     flow(N_path, G_path, text_type, image_info)
