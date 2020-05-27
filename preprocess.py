@@ -466,36 +466,36 @@ def save(content, filename, tag):
     new_file = filename.parent / (filename.stem + tag + filename.suffix)
     new_file.write_text(content, encoding="utf-8")
 
+def add_sn(content):
+    marker = '<r'
+    list = re.split(marker, content)
+    new = ''
+
+    for i, e in enumerate(list, 2):
+        new += (f'{i}-{marker}{e}')
+    
+    return new
 
 if __name__ == "__main__":
     # Path to the initial Google OCR file
-    basePath = Path("./input/footnote_text")
+    basePath = Path("data")
 
-    googlePath = basePath / "googleOCR_text" / "73durchen-google.txt"
-    namselPath = basePath / "namselOCR_text" / "73durchen-namsel.txt"
+    # googlePath = basePath / "googleOCR_text" / "73durchen-google.txt"
+    namselPath = basePath / "v073/footnotes/73N-footnotes.txt"
 
-    # derge page on which the text starts
-    init_num = "[135a]"
 
-    # Google footnotes
-    google_content = googlePath.read_text(encoding="utf-8")
-    # get text
-    googlePrep = preprocess_google_notes(google_content)
-    # get text
-    save(googlePrep, googlePath, "_num")
-    # get text
-    # googleProc = process(googlePrep, init_num)
+    # # Google footnotes
+    # google_content = googlePath.read_text(encoding="utf-8")
+    # # get text
+    # googlePrep = preprocess_google_notes(google_content)
+    # # get text
+    # save(googlePrep, googlePath, "_num")
+    # # get text
+    # # googleProc = process(googlePrep, init_num)
 
     # Namsel footnotes
     namsel_content = namselPath.read_text(encoding="utf-8")
-    # isolate and normalize pedurma pages '73-23་' --> ' <p73-230> '
-    # namsel_content = tag_page_numbers(namsel_content)
-    # isolate and normalize pedurma page references '༢༣་' --> ' <r༢༣༠> '
-    # namsel_content = tag_page_references(namsel_content)
-    # save(namsel_content, namselPath, '_num')
-    # clean content
     namselPrep = preprocess_namsel_notes(namsel_content)
-    # write to file
-    save(namselPrep, namselPath, "_num")
-    # get text
-    # namselProc = process(namselPrep, init_num)
+    with_sn = add_sn(namselPrep)
+    save(with_sn, namselPath, "_num")
+ 
