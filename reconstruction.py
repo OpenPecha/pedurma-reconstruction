@@ -52,7 +52,8 @@ def rm_google_ocr_header(text):
     result = re.sub(header_pattern, "\n\n\n", text)
     return result
 
-@timed(unit='min')
+
+@timed(unit="min")
 def get_diff(B, A):
     """Compute diff between target and source using DMP.
 
@@ -403,7 +404,7 @@ def get_value(footnote_marker):
     return value
 
 
-@timed(unit='min')
+@timed(unit="min")
 def format_diff(filter_diffs_yaml_path, image_info, type_=None):
     """Format list of diff on target text.
 
@@ -836,7 +837,10 @@ def merge_footnote_per_page(page, foot_notes):
         note = footnote_parts[1]
         repl = f"<{body_incremental},{body_value};{footnote_incremental},{footnote_value},{note}>"
         page = page.replace(marker[0], repl, 1)
-    result = page + f"/{foot_notes[0]}/"
+    if foot_notes:
+        result = page + f"/{foot_notes[0]}/"
+    else:
+        result = page
     return result
 
 
@@ -845,8 +849,9 @@ def merge_footnote(body_text_path, footnote_yaml_path):
     footnotes = yaml.safe_load(footnote_yaml_path.read_text(encoding="utf-8"))
     footnotes = list(footnotes)
     pages = re.split("<p.+?>", body_text)[:-1]
+    page_ann = re.findall("<p.+?>", body_text)
     result = ""
-    for i, (page, footnote) in enumerate(zip(pages, footnotes)):
+    for i, (page, footnote) in enumerate(zip_longest(pages, footnotes, fillvalue=[])):
         result += merge_footnote_per_page(page, footnote)
         result += page_ann[i]
     return result
@@ -933,9 +938,9 @@ if __name__ == "__main__":
     # G_path = base_path / "input" / "G.txt"
     # N_path = base_path / "input" / "N.txt"
 
-    # base_path = Path("./input/footnote_text/")
-    # G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
-    # N_path = base_path / "namselOCR_text" / "73durchen-namsel_num.txt"
+    base_path = Path("./input/footnote_text/")
+    G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
+    N_path = base_path / "namselOCR_text" / "73durchen-namsel_num.txt"
 
     base_path = Path("./input/body_text")
     G_path = base_path / "input" / "73A_transfered.txt"
