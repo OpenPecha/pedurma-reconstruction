@@ -829,7 +829,7 @@ def merge_footnote_per_page(page, foot_notes):
 
 
 def merge_footnote(body_text_path, footnote_yaml_path):
-    body_text = body_text_path.read_text()
+    body_text = body_text_path.read_text(encoding='utf-8')
     footnotes = yaml.safe_load(footnote_yaml_path.read_text(encoding="utf-8"))
     footnotes = list(footnotes)
     pages = re.split("<p.+?>", body_text)[:-1]
@@ -918,13 +918,13 @@ if __name__ == "__main__":
     # G_path = base_path / "input" / "a.txt"
     # N_path = base_path / "input" / "b.txt"
 
-    # base_path = Path("./input/footnote_text/")
-    # G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
-    # N_path = base_path / "namselOCR_text" / "73durchen-namsel_num.txt"
+    base_path = Path("./input/footnote_text/")
+    G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
+    N_path = base_path / "namselOCR_text" / "73durchen-namsel_num.txt"
 
-    base_path = Path("./input/body_text")
-    G_path = base_path / "input" / "73A_transfered.txt"
-    N_path = base_path / "input" / "73B.txt"
+    # base_path = Path("./input/body_text")
+    # G_path = base_path / "input" / "73A_transfered.txt"
+    # N_path = base_path / "input" / "73B.txt"
 
     # base_path = Path("./input/body_text")
     # G_path = base_path / "input" / "74A-nam.txt"
