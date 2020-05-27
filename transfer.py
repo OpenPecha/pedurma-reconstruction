@@ -32,7 +32,7 @@ def to_yaml(list_, path, type=None):
     """Dump list to yaml and write the yaml to a file on mentioned path.
     Args:
         list_ (list): list
-        base_path (path): base path object
+        vol_path (path): base path object
     """
     list_yaml = yaml.safe_dump(list_, allow_unicode=True)
     list_yaml_path = path
@@ -43,7 +43,7 @@ def to_yaml(list_, path, type=None):
 def from_yaml(path):
     """Load yaml to list
     Args:
-        base_path (path): base path object
+        vol_path (path): base path object
         type (string): 
     """
     diffs = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -116,10 +116,10 @@ def transfer(source_path, annotations, target_path):
 
 
 if __name__ == "__main__":
-    base_path = Path("input/body_text/input")
+    vol_path = Path("input/body_text/input")
 
-    source = base_path / "73G.txt"
+    source = vol_path / "73G.txt"
     annotations = ["#", "\n"]
-    target = base_path / "73A.txt"
+    target = vol_path / "73A.txt"
 
     transfer(source, annotations, target)
