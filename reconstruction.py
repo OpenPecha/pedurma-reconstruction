@@ -159,9 +159,11 @@ def get_abs_marker(diff):
         "[①-⑳]",
         "[༠-༩]+",
         "[0-9]+",
+        "⓪",
     ]
     for pattern in patterns:
-        if marker := re.search(pattern, diff):
+        if re.search(pattern, diff):
+            marker = re.search(pattern, diff)
             marker_ += marker[0]
     return marker_
 
@@ -179,7 +181,8 @@ def get_excep_marker(diff):
     patterns = ["པོ་", "འི", "ཚོ་", "རིན", "\(", "\)", "།\S+", "〉", "ཏུཉེ", "ཡོཉེ"]
     for pattern in patterns:
         marker = re.search(pattern, diff)
-        if marker := re.search(pattern, diff):
+        if re.search(pattern, diff):
+            marker = re.search(pattern, diff)
             marker_ += marker[0]
     return marker_
 
@@ -303,9 +306,11 @@ def get_marker(diff):
     Returns:
         str: marker
     """
-    if marker := get_abs_marker(diff):
+    if get_abs_marker(diff):
+        marker = get_abs_marker(diff)
         return marker
-    elif marker := get_excep_marker(diff):
+    elif get_excep_marker(diff):
+        marker = get_excep_marker(diff)
         return marker
     else:
         return ""
@@ -321,9 +326,10 @@ def is_circle_number(footnote_marker):
         str: number inside the circle
     """
     value = ""
-    number = re.search("[①-⑳]", footnote_marker)
+    number = re.search("[①-⑳]|⓪", footnote_marker)
     if number:
         circle_num = {
+            "⓪":'0',
             "①": "1",
             "②": "2",
             "③": "3",
@@ -416,10 +422,12 @@ def format_diff(filter_diffs_yaml_path, image_info, type_=None):
                 if diff_tag == "pedurma-pagination" and type_ == "body":
                     result += get_pg_ann(diff_text, vol_num)
                 if diff_tag == "marker":
-                    if marker := get_abs_marker(diff_text):
+                    if get_abs_marker(diff_text):
+                        marker = get_abs_marker(diff_text)
                         value = get_value(marker)
                         result += f"<{value},{marker}>"
-                    elif marker := get_excep_marker(diff_text):
+                    elif get_excep_marker(diff_text):
+                        marker = get_excep_marker(diff_text)
                         result += f"<{marker}>"
                     else:
                         result += f"<{diff_text}>"
@@ -563,6 +571,7 @@ def is_note(diff):
         "\)",
         "\(",
         "\d",
+        "⓪"
     ]
     for pattern in patterns:
         if re.search(pattern, diff):
@@ -582,10 +591,12 @@ def parse_pg_ref_diff(diff, result):
         if line:
             if re.search("<r.+?>", line):
                 result.append([1, line, "page_ref"])
-            elif marker := re.search("(<m.+?>)(.+)", line):
+            elif re.search("(<m.+?>)(.+)", line):
+                marker = re.search("(<m.+?>)(.+)", line)
                 result.append([1, marker.group(1), "marker"])
                 result.append([1, marker.group(2), ""])
-            elif marker := re.search("<m.+?>", line):
+            elif re.search("<m.+?>", line):
+                marker = re.search("<m.+?>", line)
                 result.append([1, marker[0], "marker"])
 
 
@@ -725,7 +736,7 @@ def filter_diffs(diffs_yaml_path, type, image_info):
     return filter_diffs
 
 
-def filter_footnote_diffs(diffs, vol_num):
+def filter_footnote_diffs(diffs_yaml_path, vol_num):
     """Filter the diffs of google ocr output and namsel ocr output.
 
     Args:
@@ -735,13 +746,16 @@ def filter_footnote_diffs(diffs, vol_num):
     Returns:
         list: filtered diff containing notes from google ocr o/p and marker from namsel ocr o/p
     """
+    diffs_yaml = yaml.safe_load(diffs_yaml_path.read_text(encoding="utf-8"))
+    diffs = list(diffs_yaml)
     left_diff = [0, ""]
     result = []
     for i, diff in enumerate(diffs):
         if diff[0] == 0:
             result.append([0, diff[1], ""])
         elif diff[0] == 1:
-            if clean_diff := rm_marker(diff[1]):
+            if rm_marker(diff[1]):
+                clean_diff = rm_marker(diff[1])
                 result.append([1, clean_diff, ""])
         else:
             diff_ = rm_noise(diff[1])
@@ -829,7 +843,7 @@ def merge_footnote_per_page(page, foot_notes):
 
 
 def merge_footnote(body_text_path, footnote_yaml_path):
-    body_text = body_text_path.read_text(encoding='utf-8')
+    body_text = body_text_path.read_text(encoding="utf-8")
     footnotes = yaml.safe_load(footnote_yaml_path.read_text(encoding="utf-8"))
     footnotes = list(footnotes)
     pages = re.split("<p.+?>", body_text)[:-1]
@@ -881,6 +895,7 @@ def flow(N_path, G_path, text_type, image_info):
         (base_path / f"output/result{image_info[1]}.txt").write_text(new_text, encoding="utf-8")
     elif text_type == "footnote":
         diffs_yaml_path = base_path / "diffs.yaml"
+        filtered_diffs_yaml_path = base_path / "filtered_diffs.yaml"
         G = rm_google_ocr_header(G)
         clean_G = preprocessGoogleNotes(G)
         clean_N = preprocessNamselNotes(N)
@@ -891,9 +906,9 @@ def flow(N_path, G_path, text_type, image_info):
             diffs = get_diff(clean_N, clean_G)
             diffs_list = list(map(list, diffs))
             diffs_to_yaml(diffs_list, base_path)
-        filtered_diffs = filter_footnote_diffs(diffs_list, image_info[1])
+        filtered_diffs = filter_footnote_diffs(diffs_yaml_path, image_info[1])
         filtered_diffs_to_yaml(filtered_diffs, base_path)
-        new_text = format_diff(filtered_diffs, image_info, type_="footnote")
+        new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="footnote")
         # new_text = rm_markers_ann(new_text)
         new_text = reformat_footnote(new_text)
         formatted_yaml = postprocess_footnote(new_text)
@@ -914,17 +929,17 @@ def flow(N_path, G_path, text_type, image_info):
 
 if __name__ == "__main__":
 
-    # base_path = Path("./tests/durchen_test1")
-    # G_path = base_path / "input" / "G.txt"
-    # N_path = base_path / "input" / "N.txt"
+    base_path = Path("./tests/durchen_test1")
+    G_path = base_path / "input" / "G.txt"
+    N_path = base_path / "input" / "N.txt"
 
     # base_path = Path("./tests/test4")
     # G_path = base_path / "input" / "a.txt"
     # N_path = base_path / "input" / "b.txt"
 
-    base_path = Path("./input/footnote_text/")
-    G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
-    N_path = base_path / "namselOCR_text" / "73durchen-namsel_num.txt"
+    # base_path = Path("./input/footnote_text/")
+    # G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
+    # N_path = base_path / "namselOCR_text" / "73durchen-namsel_num.txt"
 
     # base_path = Path("./input/body_text")
     # G_path = base_path / "input" / "73A_transfered.txt"
