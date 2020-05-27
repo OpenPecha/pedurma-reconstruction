@@ -902,9 +902,12 @@ def flow(N_path, G_path, text_type, image_info):
         print("Type not found")
     body_text_path = Path("./input/body_text/output/result73.txt")
     footnote_yaml_path = Path("./input/footnote_text/footnote.yaml")
-    merge_result = merge_footnote(body_text_path, footnote_yaml_path)
-    new_text = add_link(merge_result, image_info)
-    Path("./input/body_text/output/merge_result73.txt").write_text(merge_result, encoding="utf-8")
+    if body_text_path.is_file() and footnote_yaml_path.is_file():
+        merge_result = merge_footnote(body_text_path, footnote_yaml_path)
+        new_text = add_link(merge_result, image_info)
+        Path("./input/body_text/output/merge_result73.txt").write_text(
+            merge_result, encoding="utf-8"
+        )
     print("Done")
 
 
