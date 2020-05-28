@@ -96,7 +96,7 @@ def preprocess_google_notes(text):
 
     for p in patterns:
         text = re.sub(p[0], p[1], text)
-    text = translate_ref(text)
+    # text = translate_ref(text)
     return text
 
 """
@@ -275,7 +275,7 @@ def preprocess_namsel_notes(text):
     for p in patterns:
         text = re.sub(p[0], p[1], text)
     
-    text = translate_ref(text)
+    # text = translate_ref(text)
 
     return text
 

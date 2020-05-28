@@ -70,7 +70,7 @@ def get_diff(B, A):
     diffs = dmp.diff_main(B, A)
     # beautifies the diff list
     # dmp.diff_cleanupSemantic(diffs)
-    print("Diff computation done.")
+    print("Diff computation completed.")
     return diffs
 
 
@@ -765,7 +765,9 @@ def filter_footnotes_diffs(diffs_yaml_path, vol_num):
                 left_diff = diffs[i - 1]
             if left_diff[2] != 'marker':
                 if '4' in diff[1]:
-                    clean_diff = re.sub('[^4|\n]', '', left_diff[1])
+                    if re.search('\d{2}', diff[1]):
+                        continue
+                    clean_diff = re.sub('[^4|\n]', '', diff[1])
                     filtered_diffs.append([0, clean_diff, 'marker' ])
                 else:
                     diff[1] = rm_marker(diff[1])
@@ -778,10 +780,8 @@ def filter_footnotes_diffs(diffs_yaml_path, vol_num):
 
 def postprocess_footnotes(footnotes):
     """Save the formatted footnotes to dictionary with key as page ref and value as footnotes in that page.
-
     Args:
         footnotes (str): formatted footnote
-
     Returns:
         dict: key as page ref and value as footnotes in that page
     """
@@ -889,8 +889,8 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
     filtered_diffs_yaml_path = dir_path / "filtered_diffs.yaml"
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
-        # if diffs_yaml_path.is_file():
-        if 0 == 1:
+        if diffs_yaml_path.is_file():
+        # if 0 == 1:
             pass
         else:
             print("Calculating diffs...")
@@ -913,7 +913,7 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         ["pedurma_page", "(<p.+?>)"],
     ]
         G = rm_google_ocr_header(G)
-        clean_G = preprocess_namsel_notes(G)
+        clean_G = preprocess_google_notes(G)
         clean_N = preprocess_namsel_notes(N)
         # if diffs_yaml_path.is_file():
         if 0 == 1:
@@ -965,4 +965,4 @@ if __name__ == "__main__":
         (base_path / f"{vol_num}_combined.txt").write_text(
             merge_result, encoding="utf-8"
         )
-        print('Merge Complete')
+        print('Merge complete.')

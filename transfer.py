@@ -138,8 +138,8 @@ def transfer(source, annotations, target):
     # convert tofu id back to annotation using mapping
     # return transfer diffs containing target+ annotation
 
-    # source = source_path.read_text(encoding="utf-8")
-    # target = target_path.read_text(encoding="utf-8")
+    print(f"Annotation transfer started!")
+
     tofu_source, tofu_mapping = tag_to_tofu(source, annotations)
     diffs = get_diffs(tofu_source, target)
 
