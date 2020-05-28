@@ -17,6 +17,7 @@ from functools import partial
 import yaml
 from diff_match_patch import diff_match_patch
 from preprocess import preprocess_google_notes, preprocess_namsel_notes
+from transfer import transfer
 from horology import timed
 
 
@@ -140,7 +141,7 @@ def rm_markers_ann(text):
 
 
 def get_pg_ann(diff, vol_num):
-    """Extract pedurma pagination and put page annotation.
+    """Extract pedurma page and put page annotation.
 
     Args:
         diff (str): diff text
@@ -431,11 +432,11 @@ def format_diff(filter_diffs_yaml_path, image_info, type_=None):
     vol_num = image_info[1]
     result = ""
     for diff_type, diff_text, diff_tag in diffs:
-        if diff_type == 0:
-            result += diff_text
-        elif diff_type == 1:
+        # if diff_type == 0:
+        #     result += diff_text
+        if diff_type == 1 or diff_type == 0:
             if diff_tag:
-                if diff_tag == "pedurma-pagination" and type_ == "body":
+                if diff_tag == "pedurma-page" and type_ == "body":
                     result += get_pg_ann(diff_text, vol_num)
                 if diff_tag == "marker":
                     if get_abs_marker(diff_text):
@@ -447,7 +448,7 @@ def format_diff(filter_diffs_yaml_path, image_info, type_=None):
                         result += f"<{marker}>"
                     else:
                         result += f"<{diff_text}>"
-                elif diff_tag == "page_ref":
+                elif diff_tag == "pg_ref":
                     result += diff_text
             else:
                 result += diff_text
@@ -456,7 +457,7 @@ def format_diff(filter_diffs_yaml_path, image_info, type_=None):
 
 
 def reformatting_body(text):
-    """Reformat marker annotation using pedurma pagination.
+    """Reformat marker annotation using pedurma page.
 
     Args:
         text (str): unformatted text
@@ -512,8 +513,8 @@ def add_link(text, image_info):
     return result
 
 
-def get_pagination(diff, cur_loc, diffs, vol_num):
-    """Extract pedurma pagination from diffs.
+def get_page(diff, cur_loc, diffs, vol_num):
+    """Extract pedurma page from diffs.
 
     Args:
         diff (str): diff text
@@ -522,18 +523,18 @@ def get_pagination(diff, cur_loc, diffs, vol_num):
         vol_num (int): volume number
 
     Returns:
-        str: pedurma pagination
+        str: pedurma page
     """
-    pagination = ""
+    page = ""
     step = 0
     if diff == str(vol_num):
         for walker in diffs[cur_loc + 1 :]:
             if walker[0] == 0:
                 break
             step += 1
-        pagination += f"{diff}—{walker[1]}"
+        page += f"{diff}—{walker[1]}"
         del diffs[cur_loc + 1 : cur_loc + 2 + step]
-    return pagination
+    return page
 
 
 def rm_marker(diff):
@@ -660,8 +661,8 @@ def filter_diffs(diffs_yaml_path, type, image_info):
         elif diff[0] == -1:  # in A not in B
             if re.search(
                 f"{vol_num}་?\D་?\d+", diff[1]
-            ):  # checking diff text is pagination or not
-                result.append([1, diff[1], "pedurma-pagination"])
+            ):  # checking diff text is page or not
+                result.append([1, diff[1], "pedurma-page"])
             else:
                 if i > 0:  # extracting left context of current diff
                     left_diff = diffs[i - 1]
@@ -754,44 +755,25 @@ def filter_footnotes_diffs(diffs_yaml_path, vol_num):
         list: filtered diff containing notes from google ocr o/p and marker from namsel ocr o/p
     """
     diffs = from_yaml(diffs_yaml_path)
-    left_diff = [0, ""]
-    result = []
+    left_diff = [0, "", ""]
+    filtered_diffs = []
     for i, diff in enumerate(diffs):
         if diff[0] == 0:
-            result.append([0, diff[1], ""])
+            filtered_diffs.append(diff)
         elif diff[0] == 1:
-            if rm_marker(diff[1]):
-                clean_diff = rm_marker(diff[1])
-                result.append([1, clean_diff, ""])
-        else:
-            diff_ = rm_noise(diff[1])
-
             if i > 0:  # extracting left context of current diff
                 left_diff = diffs[i - 1]
-            if i < len(diffs) - 1:  # extracting right context of current diff
-                right_diff = diffs[i + 1]
-            if left_diff[0] == 0 and right_diff[0] == 0 and "»" != right_diff[1].strip("་"):
-                if is_note(diff[1]):
-                    continue
-                if re.search("<p.+?>", diff[1]):  # checking diff text is pagination or not
-                    result.append([1, diff[1], "pedurma-pagination"])
-                elif re.search("<r.+?>", diff[1]):
-                    parse_pg_ref_diff(diff[1], result)
+            if left_diff[2] != 'marker':
+                if '4' in diff[1]:
+                    clean_diff = re.sub('[^4|\n]', '', left_diff[1])
+                    filtered_diffs.append([0, clean_diff, 'marker' ])
                 else:
-                    result.append([1, diff_, "marker"])
-            elif right_diff[0] == 1 and "»" != left_diff[1].strip("་"):
-                if re.search("<p.+?>", diff[1]):  # checking diff text is pagination or not
-                    result.append([1, diff[1], "pedurma-pagination"])
-                elif re.search("<r.+?>", diff[1]):
-                    parse_pg_ref_diff(diff[1], result)
-                elif get_abs_marker(diff[1]):
-                    result.append([1, diff_, "marker"])
-                    diffs[i + 1][1] = re.sub("[^\n]", "", right_diff[1])
-                elif get_abs_marker(right_diff[1]):
-                    result.append([1, right_diff[1], "marker"])
-                elif get_excep_marker(diff[1]):
-                    result.append([1, diff_, "marker"])
-    return result
+                    diff[1] = rm_marker(diff[1])
+                    filtered_diffs.append(diff)
+        else:
+            filtered_diffs.append(diff)
+        
+    return filtered_diffs
 
 
 def postprocess_footnotes(footnotes):
@@ -811,6 +793,7 @@ def postprocess_footnotes(footnotes):
     first_ref = page_refs[0]
     table = first_ref.maketrans("༡༢༣༤༥༦༧༨༩༠", "1234567890", "<r>")
     start = int(first_ref.translate(table))
+    print(f'number of page ref found -{len(page_refs)} number of page found-{len(pages)}')
     for walker, (page, page_ref) in enumerate(zip_longest(pages, page_refs, fillvalue=""), start):
         markers = re.finditer("<.+?>", page)
         marker_l = []
@@ -831,7 +814,7 @@ def postprocess_footnotes(footnotes):
     return result
 
 
-def merge_footnote_per_page(page, foot_notes):
+def merge_footnotes_per_page(page, foot_notes):
     """Merge the footnote of a certain page to its body text.
 
     Args:
@@ -902,11 +885,11 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
 
     dir_path = vol_path / text_type
 
-    diffs_yaml_path = base_path / "diffs.yaml"
-    filtered_diffs_yaml_path = base_path / "filtered_diffs.yaml"
+    diffs_yaml_path = dir_path / "diffs.yaml"
+    filtered_diffs_yaml_path = dir_path / "filtered_diffs.yaml"
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
-        # if diffs_yaml_path.is_file():
+        if diffs_yaml_path.is_file():
         if 0 == 1:
             pass
         else:
@@ -921,17 +904,23 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         new_text = reformatting_body(new_text)
         new_text = add_link(new_text, image_info)
         # new_text = rm_markers_ann(new_text)
-        (base_path / f"output/result{image_info[1]}.txt").write_text(new_text, encoding="utf-8")
+        (dir_path / f"result.txt").write_text(new_text, encoding="utf-8")
     elif text_type == "footnotes":
+        annotations = [
+        ["marker", "(<m.+?>)"],
+        ["marker", "([①-⑩])"],
+        ["pg_ref", "(<r.+?>)"],
+        ["pedurma_page", "(<p.+?>)"],
+    ]
         G = rm_google_ocr_header(G)
         clean_G = preprocess_namsel_notes(G)
         clean_N = preprocess_namsel_notes(N)
-        # if diffs_yaml_path.is_file():
+        if diffs_yaml_path.is_file():
         if 0 == 1:
             pass
         else:
-            print("Calculating diffs..")    
-            diffs = get_diff(clean_N, clean_G)
+            print("Calculating diffs..")
+            diffs = transfer(clean_N, annotations, clean_G)
             diffs_list = list(map(list, diffs))
             diffs_to_yaml(diffs_list, dir_path)
         filtered_diffs = filter_footnotes_diffs(diffs_yaml_path, image_info[1])
@@ -939,6 +928,7 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="footnotes")
         # new_text = rm_markers_ann(new_text)
         new_text = reformat_footnotes(new_text)
+
         formatted_yaml = postprocess_footnotes(new_text)
         footnotes_to_yaml(formatted_yaml, dir_path)
         (dir_path / "result.txt").write_text(new_text, encoding="utf-8")
@@ -956,21 +946,23 @@ if __name__ == "__main__":
         vol_num,
         16,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
-    
     text_types = ["body", "footnotes"]
     base_path = Path(f'./data/v{vol_num:03}')
     for text_type in text_types:
         if text_type == 'body':
-            G_path = base_path / text_type / f'{vol_num}E_transfered.txt'
+            G_path = base_path / text_type / f'{vol_num}E-{text_type}_transfered.txt'
         else:
-            G_path = base_path / text_type / f'{vol_num}G.txt'
-        N_path = base_path / text_type / f'{vol_num}N.txt'
-        flow(N_path, G_path, text_type, image_info)
-    body_result_path = base_path / text_types[0] / f'result.txt'
-    footnote_yaml_path = base_path / text_types[1] / f'footnote.yaml'
+            G_path = base_path / text_type / f'{vol_num}G-{text_type}.txt'
+        N_path = base_path / text_type / f'{vol_num}N-{text_type}.txt'
+        flow(base_path, N_path, G_path, text_type, image_info)
+        print(f'{text_type} part done..')
+    body_result_path = base_path / f'body/result.txt'
+    footnote_yaml_path = base_path / f'footnotes/footnotes.yaml'
     if body_result_path.is_file() and footnote_yaml_path.is_file():
-        merge_result = merge_footnote(body_text_path, footnote_yaml_path)
+        print('Merge start..')
+        merge_result = merge_footnote(body_result_path, footnote_yaml_path)
         new_text = add_link(merge_result, image_info)
-        base_path / f"{vol_num}_combined.txt".write_text(
+        (base_path / f"{vol_num}_combined.txt").write_text(
             merge_result, encoding="utf-8"
         )
+        print('Merge Complete')

@@ -87,9 +87,9 @@ def preprocess_google_notes(text):
         # ['<', ''],
         # headers ++<header>++
         # ['(#.+?e#[^།]+?།)', '#++\g<1>\g<2>++\g<3>«'],   # even
-        # ["»\n", "»"],  # put all the notes split on two lines on a single one
-        # ["། །\n", "།\n"],
-        # ["<m.+?>", "4"],  # replace m tag with m only
+        ["»\n", "»"],  # put all the notes split on two lines on a single one
+        ["། །\n", "།\n"],
+        ["<m.+?>", "4"],  # replace m tag with m only
     ]
 
     # «ཅོ་»«ཞོལ་»གྲག་༡༨)
