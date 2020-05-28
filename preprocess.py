@@ -465,20 +465,20 @@ def preprocess_namsel_body(text):
     return text
 
 
-
 def save(content, filename, tag):
     # saves file
     new_file = filename.parent / (filename.stem + tag + filename.suffix)
     new_file.write_text(content, encoding="utf-8")
 
+
 def add_sn(content):
-    marker = '<r'
+    marker = "<r"
     list = re.split(marker, content)
-    new = ''
+    new = ""
 
     for i, e in enumerate(list, 2):
-        new += (f'{i}-{marker}{e}')
-    
+        new += f"{i}-{marker}{e}"
+
     return new
 
 def translate_ref(content):
@@ -510,4 +510,4 @@ if __name__ == "__main__":
     namselPrep = preprocess_namsel_notes(namsel_content)
     with_sn = add_sn(namselPrep)
     save(with_sn, namselPath, "_num")
- 
+
