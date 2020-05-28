@@ -150,14 +150,14 @@ def transfer(source, annotations, target):
 if __name__ == "__main__":
     base_path = Path("tests/durchen_test1")
 
-    source = base_path / "input/N.txt".read_text()
+    source = (base_path / "input/N.txt").read_text(encoding='utf-8')
     annotations = [
         ["marker", "(<m.+?>)"],
         ["marker", "([①-⑩])"],
         ["pg_ref", "(<r.+?>)"],
         ["pedurma-page", "(<p.+?>)"],
     ]
-    target = base_path / "input/G.txt".read_text()
+    target = (base_path / "input/G.txt").read_text(encoding='utf-8')
 
     transfered_diffs = transfer(source, annotations, target)
     to_yaml(transfered_diffs, base_path / "transfered_diff.yaml", type=None)

@@ -889,7 +889,7 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
     filtered_diffs_yaml_path = dir_path / "filtered_diffs.yaml"
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
-        if diffs_yaml_path.is_file():
+        # if diffs_yaml_path.is_file():
         if 0 == 1:
             pass
         else:
@@ -915,7 +915,7 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         G = rm_google_ocr_header(G)
         clean_G = preprocess_namsel_notes(G)
         clean_N = preprocess_namsel_notes(N)
-        if diffs_yaml_path.is_file():
+        # if diffs_yaml_path.is_file():
         if 0 == 1:
             pass
         else:
