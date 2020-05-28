@@ -491,8 +491,6 @@ def translate_ref(content):
 if __name__ == "__main__":
     # Path to the initial Google OCR file
     basePath = Path("data")
-
-
  
     # # Google footnotes
     # googlePath = basePath / "v073/footnotes/73G-footnotes.txt"

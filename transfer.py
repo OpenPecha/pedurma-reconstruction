@@ -53,7 +53,7 @@ def from_yaml(path):
     return diffs_list
 
 
-@timed(unit="s", name="format: ")
+@timed(unit="s")
 def format(diffs):
     result = ""
     for n, s in diffs:
@@ -138,7 +138,7 @@ def transfer(source, annotations, target):
     # convert tofu id back to annotation using mapping
     # return transfer diffs containing target+ annotation
 
-    print(f"Annotation transfer started!")
+    print(f"Annotation transfer started.")
 
     tofu_source, tofu_mapping = tag_to_tofu(source, annotations)
     diffs = get_diffs(tofu_source, target)
@@ -148,16 +148,16 @@ def transfer(source, annotations, target):
 
 
 if __name__ == "__main__":
-    base_path = Path("tests/durchen_test1")
 
-    source = (base_path / "input/N.txt").read_text(encoding='utf-8')
+    base_path = Path("data/v073/footnotes")
+    source = (base_path / "73N-footnotes.txt").read_text(encoding='utf-8')
     annotations = [
         ["marker", "(<m.+?>)"],
         ["marker", "([①-⑩])"],
         ["pg_ref", "(<r.+?>)"],
         ["pedurma-page", "(<p.+?>)"],
     ]
-    target = (base_path / "input/G.txt").read_text(encoding='utf-8')
+    target = (base_path / "73G-footnotes.txt").read_text(encoding='utf-8')
 
     transfered_diffs = transfer(source, annotations, target)
     to_yaml(transfered_diffs, base_path / "transfered_diff.yaml", type=None)

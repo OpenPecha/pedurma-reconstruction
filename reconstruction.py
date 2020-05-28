@@ -824,6 +824,9 @@ def merge_footnotes_per_page(page, foot_notes):
     Returns:
         str: content of page attached with their footnote adjacent to their marker
     """
+    if not page and foot_notes:
+        return f'pages: {len(page)}, footnotes: {len(foot_notes)}'
+        
     markers = re.finditer("<.+?>", page)
     for i, (marker, foot_note) in enumerate(zip(markers, foot_notes[1:])):
         marker_parts = marker[0][1:-1].split(",")
@@ -859,7 +862,8 @@ def merge_footnote(body_text_path, footnote_yaml_path):
     result = ""
     for i, (page, footnotes) in enumerate(zip_longest(pages, footnotes, fillvalue=[])):
         result += merge_footnotes_per_page(page, footnotes)
-        result += page_ann[i]
+        if page_ann[i]:
+            result += page_ann[i]
     return result
 
 
