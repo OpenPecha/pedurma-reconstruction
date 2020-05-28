@@ -94,44 +94,41 @@ def filter_annotations(annotations, diffs):
 
 
 def tag_to_tofu(content, annotations):
-    all_annotations = "("
-    for i, annotation in enumerate(annotations):
-        if annotation is annotations[-1]:
-            all_annotations += f"{annotation[1]})"
-        else:
-            all_annotations += f"{annotation[1]}|"
-    split_list = re.split(all_annotations, content)
+    new_content = content
     tofu_mapping = {}
-    for i, e in enumerate(split_list):
-        if re.search(all_annotations, e):
-            tofu = chr(i + 1000000)
-            for annotation in annotations:
-                if re.search(annotation[1], e):
-                    tofu_mapping[tofu] = [annotation[0], e]
-            split_list[i] = tofu
-    new_content = "".join(split_list)
+    tofu_walker = 0
+    for annotation in annotations:
+        split_list = re.split(annotation[1], new_content)
+        for i, e in enumerate(split_list):
+            if re.search(annotation[1], e):
+                tofu = chr(tofu_walker + 1000000)
+                tofu_walker += 1
+                tofu_mapping[tofu] = [annotation[0], e]
+                split_list[i] = tofu
+        new_content = "".join(split_list)
     return new_content, tofu_mapping
 
 
 def filter_diff(diffs_list, tofu_mapping):
     result = []
     for i, (diff_type, diff_text) in enumerate(diffs_list):
-        if diff_type == 0 and diff_type == 1:
+        if diff_type == 0 or diff_type == 1:
             result.append([diff_type, diff_text, ""])
-        else:
-            if re.search("[chr(1000000)-chr(2000000)]", diff_text):
-                anns = re.split("([chr(1000000)-chr(2000000)])", diff_text)
+        elif diff_type == -1:
+            if re.search(f"[{chr(1000000)}-{chr(1100000)}]", diff_text):
+                anns = re.split(f"([{chr(1000000)}-{chr(1100000)}])", diff_text)
                 for ann in anns:
-                    if tofu_mapping.get(ann):
-                        tag, value = tofu_mapping.get(ann)
-                        result.append([0, value, tag])
-                    else:
-                        result.append([0, ann, ""])
+                    if ann:
+                        if tofu_mapping.get(ann):
+                            tag, value = tofu_mapping.get(ann)
+                            result.append([0, value, tag])
+                        else:
+                            result.append([-1, ann, ""])
     return result
 
 
 @timed(unit="s", name="transfer: ")
-def transfer(source_path, annotations, target_path):
+def transfer(source, annotations, target):
     # catches annotation in source with regex and transfer them to target while preserving
     # all the content in both source and target.
     # converts annotations to tofu id in source and save the mapping
@@ -141,11 +138,9 @@ def transfer(source_path, annotations, target_path):
     # convert tofu id back to annotation using mapping
     # return transfer diffs containing target+ annotation
 
-    source = source_path.read_text(encoding="utf-8")
-    target = target_path.read_text(encoding="utf-8")
+    # source = source_path.read_text(encoding="utf-8")
+    # target = target_path.read_text(encoding="utf-8")
     tofu_source, tofu_mapping = tag_to_tofu(source, annotations)
-    Path("./tests/durchen_test1/tofu.txt").write_text(tofu_source, encoding="utf-8")
-    print("Tofu done..")
     diffs = get_diffs(tofu_source, target)
 
     transfered_diff = filter_diff(diffs, tofu_mapping)
@@ -155,14 +150,14 @@ def transfer(source_path, annotations, target_path):
 if __name__ == "__main__":
     base_path = Path("tests/durchen_test1")
 
-    source = base_path / "input/G.txt"
+    source = base_path / "input/N.txt".read_text()
     annotations = [
         ["marker", "(<m.+?>)"],
         ["marker", "([①-⑩])"],
         ["pg_ref", "(<r.+?>)"],
-        ["pedurma_page", "(<p.+?>)"],
+        ["pedurma-page", "(<p.+?>)"],
     ]
-    target = base_path / "input/N.txt"
+    target = base_path / "input/G.txt".read_text()
 
     transfered_diffs = transfer(source, annotations, target)
     to_yaml(transfered_diffs, base_path / "transfered_diff.yaml", type=None)
