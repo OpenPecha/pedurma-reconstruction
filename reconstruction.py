@@ -88,6 +88,18 @@ def to_yaml(list_, base_path, type_=None):
     print(f"{type_} Yaml saved...")
 
 
+def from_yaml(path):
+    """Load yaml to list
+    Args:
+        path (path): path object
+    Returns:
+        list: list inside the yaml 
+    """
+    diffs = yaml.safe_load(path.read_text(encoding="utf-8"))
+    diffs_list = list(diffs)
+    return diffs_list
+
+
 def rm_noise(diff):
     """Filter out noise from diff text.
 
@@ -415,8 +427,7 @@ def format_diff(filter_diffs_yaml_path, image_info, type_=None):
     Returns:
         str: target text with transfered annotations with markers.
     """
-    filtered_diffs_yaml = yaml.safe_load(filter_diffs_yaml_path.read_text(encoding="utf-8"))
-    diffs = list(filtered_diffs_yaml)
+    diffs = from_yaml(filter_diffs_yaml_path)
     vol_num = image_info[1]
     result = ""
     for diff_type, diff_text, diff_tag in diffs:
@@ -438,8 +449,6 @@ def format_diff(filter_diffs_yaml_path, image_info, type_=None):
                         result += f"<{diff_text}>"
                 elif diff_tag == "page_ref":
                     result += diff_text
-                elif diff_tag == "candidate-marker":
-                    result += f"({diff_text})"
             else:
                 result += diff_text
 
@@ -637,10 +646,9 @@ def filter_diffs(diffs_yaml_path, type, image_info):
         list: filtered diff
     """
     left_diff = [0, ""]
-    diffs_yaml = yaml.safe_load(diffs_yaml_path.read_text(encoding="utf-8"))
     result = []
     vol_num = image_info[1]
-    diffs = list(diffs_yaml)
+    diffs = from_yaml(diffs_yaml_path)
     for i, diff in enumerate(diffs):
         if diff[0] == 0:  # in B not in A
             result.append([diff[0], diff[1], ""])
@@ -745,8 +753,7 @@ def filter_footnote_diffs(diffs_yaml_path, vol_num):
     Returns:
         list: filtered diff containing notes from google ocr o/p and marker from namsel ocr o/p
     """
-    diffs_yaml = yaml.safe_load(diffs_yaml_path.read_text(encoding="utf-8"))
-    diffs = list(diffs_yaml)
+    diffs = from_yaml(diffs_yaml_path)
     left_diff = [0, ""]
     result = []
     for i, diff in enumerate(diffs):
@@ -826,6 +833,15 @@ def postprocess_footnote(footnote):
 
 
 def merge_footnote_per_page(page, foot_notes):
+    """Merge the footnote of a certain page to its body text.
+
+    Args:
+        page (str): content in page
+        foot_notes (list): list of footnotes
+
+    Returns:
+        str: content of page attached with their footnote adjacent to their marker
+    """
     markers = re.finditer("<.+?>", page)
     for i, (marker, foot_note) in enumerate(zip(markers, foot_notes[1:])):
         marker_parts = marker[0][1:-1].split(",")
@@ -845,9 +861,17 @@ def merge_footnote_per_page(page, foot_notes):
 
 
 def merge_footnote(body_text_path, footnote_yaml_path):
+    """Merge footnotes of a whole text abjacent to the marker in their content.
+
+    Args:
+        body_text_path (obj): body text path path object
+        footnote_yaml_path (obj): footnote yaml path object
+
+    Returns:
+        str: footnote combined with their respective marker in text content 
+    """
     body_text = body_text_path.read_text(encoding="utf-8")
-    footnotes = yaml.safe_load(footnote_yaml_path.read_text(encoding="utf-8"))
-    footnotes = list(footnotes)
+    footnotes = from_yaml(footnote_yaml_path)
     pages = re.split("<p.+?>", body_text)[:-1]
     page_ann = re.findall("<p.+?>", body_text)
     result = ""
@@ -877,10 +901,10 @@ def flow(N_path, G_path, text_type, image_info):
     )  # customising to_yaml function for filtered diffs list
     footnote_to_yaml = partial(to_yaml, type_="footnote")
 
+    diffs_yaml_path = base_path / "diffs.yaml"
+    filtered_diffs_yaml_path = base_path / "filtered_diffs.yaml"
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
-        diffs_yaml_path = base_path / "diffs.yaml"
-        filtered_diffs_yaml_path = base_path / "filtered_diffs.yaml"
         # if diffs_yaml_path.is_file():
         if 0 == 1:
             pass
@@ -897,9 +921,7 @@ def flow(N_path, G_path, text_type, image_info):
         # new_text = add_link(new_text, image_info)
         # new_text = rm_markers_ann(new_text)
         (base_path / f"output/result{image_info[1]}.txt").write_text(new_text, encoding="utf-8")
-    elif text_type == "footnote":
-        diffs_yaml_path = base_path / "diffs.yaml"
-        filtered_diffs_yaml_path = base_path / "filtered_diffs.yaml"
+    elif text_type == "footnotes":
         G = rm_google_ocr_header(G)
         clean_G = preprocess_google_notes(G)
         clean_N = preprocess_namsel_notes(N)
@@ -921,44 +943,33 @@ def flow(N_path, G_path, text_type, image_info):
         (base_path / "output/result.txt").write_text(new_text, encoding="utf-8")
     else:
         print("Type not found")
-    body_text_path = Path("./input/body_text/output/result73.txt")
-    footnote_yaml_path = Path("./input/footnote_text/footnote.yaml")
-    if body_text_path.is_file() and footnote_yaml_path.is_file():
-        merge_result = merge_footnote(body_text_path, footnote_yaml_path)
-        new_text = add_link(merge_result, image_info)
-        Path("./input/body_text/output/merge_result73.txt").write_text(
-            merge_result, encoding="utf-8"
-        )
     print("Done")
 
 
 if __name__ == "__main__":
-
-    # base_path = Path("./tests/durchen_test1")
-    # G_path = base_path / "input" / "G.txt"
-    # N_path = base_path / "input" / "N.txt"
-
-    base_path = Path("./input/footnote_text/")
-    G_path = base_path / "googleOCR_text" / "73durchen-google_num.txt"
-    N_path = base_path / "namselOCR_text" / "73durchen-namsel_num.txt"
-
-    base_path = Path("./input/body_text")
-    G_path = base_path / "input" / "73A_transfered.txt"
-    N_path = base_path / "input" / "73B.txt"
-
-    # base_path = Path("./input/body_text")
-    # G_path = base_path / "input" / "74A-nam.txt"
-    # N_path = base_path / "input" / "74A-der.txt"
-
-
+    vol_num = 73
     # only works text by text or note by note for now
     # TODO: run on whole volumes/instances by parsing the BDRC outlines to find and identify text type and get the image locations
     image_info = [
         "W1PD96682",
-        73,
+        vol_num,
         16,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
-
-    text_type = "body"
-
-    flow(N_path, G_path, text_type, image_info)
+    
+    text_types = ["body", "footnotes"]
+    base_path = Path(f'./data/v{vol_num:03}')
+    for text_type in text_types:
+        if text_type == 'body':
+            G_path = base_path / text_type / f'{vol_num}E_transfered.txt'
+        else:
+            G_path = base_path / text_type / f'{vol_num}G.txt'
+        N_path = base_path / text_type / f'{vol_num}N.txt'
+        flow(N_path, G_path, text_type, image_info)
+    body_result_path = base_path / text_types[0] / f'result.txt'
+    footnote_yaml_path = base_path / text_types[1] / f'footnote.yaml'
+    if body_result_path.is_file() and footnote_yaml_path.is_file():
+        merge_result = merge_footnote(body_text_path, footnote_yaml_path)
+        new_text = add_link(merge_result, image_info)
+        base_path / f"{vol_num}_combined.txt".write_text(
+            merge_result, encoding="utf-8"
+        )

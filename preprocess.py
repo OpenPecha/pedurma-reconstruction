@@ -88,7 +88,7 @@ def preprocess_google_notes(text):
         # ['(#.+?e#[^།]+?།)', '#++\g<1>\g<2>++\g<3>«'],   # even
         ["»\n", "»"],  # put all the notes split on two lines on a single one
         ["། །\n", "།\n"],
-        ["<m.+?>", "4"],  # replace m tag with m only
+        ["<m.+?>", ""],  # replace m tag with m only
     ]
 
     # «ཅོ་»«ཞོལ་»གྲག་༡༨)
@@ -460,7 +460,6 @@ def preprocess_namsel_body(text):
     return text
 
 
-
 def save(content, filename, tag):
     # saves file
     new_file = filename.parent / (filename.stem + tag + filename.suffix)
@@ -469,10 +468,10 @@ def save(content, filename, tag):
 
 if __name__ == "__main__":
     # Path to the initial Google OCR file
-    basePath = Path("./input/footnote_text")
+    basePath = Path("./data/v073/footnotes")
 
-    googlePath = basePath / "googleOCR_text" / "73durchen-google.txt"
-    namselPath = basePath / "namselOCR_text" / "73durchen-namsel.txt"
+    googlePath = basePath / "73G.txt"
+    namselPath = basePath / "73N.txt"
 
     # derge page on which the text starts
     init_num = "[135a]"

@@ -28,6 +28,7 @@ cucumber-report.json
 **/.vscode-smoke/**
 **/.venv*/
 **/.env*/
+**/.pypyenv*/
 port.txt
 precommit.hook
 pythonFiles/experimental/ptvsd/**
