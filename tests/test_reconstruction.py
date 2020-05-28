@@ -27,17 +27,17 @@ def rm_markers_ann(text):
     return result
 
 
-def to_yaml(list_, base_path, type_=None):
+def to_yaml(list_, vol_path, type_=None):
     """Dump list to yaml and write the yaml to a file on mentioned path.
 
     Args:
         list_ (list): list
-        base_path (path): base path object
+        vol_path (path): base path object
         type_ (str, optional): type of list you want to dump as yaml. Defaults to None.
     """
     print(f"Dumping {type_}...")
     list_yaml = yaml.safe_dump(list_, allow_unicode=True)
-    list_yaml_path = base_path / f"{type_}.yaml"
+    list_yaml_path = vol_path / f"{type_}.yaml"
     list_yaml_path.write_text(list_yaml, encoding="utf-8")
     print(f"{type_} Yaml saved...")
 
@@ -46,12 +46,12 @@ def test_reconstruction():
     """Test for reconstruction.
 
     """
-    base_path = Path("./test1/")
-    target_path = base_path / "input" / "a.txt"
-    source_path = base_path / "input" / "b.txt"
+    vol_path = Path("./test1/")
+    target_path = vol_path / "input" / "a.txt"
+    source_path = vol_path / "input" / "b.txt"
     diffs_to_yaml = partial(to_yaml, type_="diffs")
     filtered_diffs_to_yaml = partial(to_yaml, type_="filtered_diffs")
-    # truth_path = base_path / "test1truth.txt"
+    # truth_path = vol_path / "test1truth.txt"
     image_info = [
         "W1PD96682",
         74,
@@ -64,13 +64,13 @@ def test_reconstruction():
     print("Calculating diff...")
     diffs = reconstruction.get_diff(source, target)
     diffs_list = list(map(list, diffs))
-    diffs_to_yaml(diffs_list, base_path)
+    diffs_to_yaml(diffs_list, vol_path)
     filtered_diffs = reconstruction.filter_diffs(diffs_list, "body", image_info)
-    filtered_diffs_to_yaml(filtered_diffs, base_path)
+    filtered_diffs_to_yaml(filtered_diffs, vol_path)
     result = reconstruction.format_diff(filtered_diffs, image_info)
     # result = reconstruction.add_link(result, image_info)
     result = rm_markers_ann(result)
-    (base_path / "output/result.txt").write_text(result, encoding="utf-8")
+    (vol_path / "output/result.txt").write_text(result, encoding="utf-8")
     # assert result == expected, "Not match"
 
 

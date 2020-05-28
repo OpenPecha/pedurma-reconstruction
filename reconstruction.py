@@ -1,10 +1,10 @@
 
 
 """
-Pedurma Footnote Reconstruction
-Footnote reconstruction script for the ocred katen pedurma using annotation transfer with 
+Pedurma footnotes Reconstruction
+footnotes reconstruction script for the ocred katen pedurma using annotation transfer with 
 google's dmp.(https://github.com/google/diff-match-patch) 
-This script allows to transfer a specific set of annotations(footnotes and footnote markers) 
+This script allows to transfer a specific set of annotations(footnotes and footnotes markers) 
 from text A(OCRed etext) to text B(clean etext). We first compute a diff between  texts 
 A and B, then filter the annotations(dmp diffs) we want to transfer and then apply them to 
 text B.
@@ -20,7 +20,7 @@ from preprocess import preprocess_google_notes, preprocess_namsel_notes
 from horology import timed
 
 
-def preprocess_footnote(B, A):
+def preprocess_footnotes(B, A):
     """Normalise edition markers to minimise noise in diffs.
 
     Args:
@@ -73,17 +73,17 @@ def get_diff(B, A):
     return diffs
 
 
-def to_yaml(list_, base_path, type_=None):
+def to_yaml(list_, vol_path, type_=None):
     """Dump list to yaml and write the yaml to a file on mentioned path.
 
     Args:
         list_ (list): list
-        base_path (path): base path object
+        vol_path (path): base path object
         type_ (str, optional): type of list you want to dump as yaml. Defaults to None.
     """
     print(f"Dumping {type_}...")
     list_yaml = yaml.safe_dump(list_, allow_unicode=True)
-    list_yaml_path = base_path / f"{type_}.yaml"
+    list_yaml_path = vol_path / f"{type_}.yaml"
     list_yaml_path.write_text(list_yaml, encoding="utf-8")
     print(f"{type_} Yaml saved...")
 
@@ -122,13 +122,13 @@ def rm_noise(diff):
 
 
 def rm_markers_ann(text):
-    """Remove page annotation and replace footnotemarker with #.
+    """Remove page annotation and replace footnotesmarker with #.
 
     Args:
         text (str): diff applied text
 
     Returns:
-        str: diff applied text without page annotation and replaced footnotemarker with #
+        str: diff applied text without page annotation and replaced footnotesmarker with #
     """
     result = ""
     lines = text.splitlines()
@@ -157,13 +157,13 @@ def get_pg_ann(diff, vol_num):
 
 
 def get_abs_marker(diff):
-    """Extract absolute footnote marker from diff text.
+    """Extract absolute footnotes marker from diff text.
 
     Args:
         diff (str): diff text
 
     Returns:
-        str: footnote marker
+        str: footnotes marker
     """
     marker_ = ""
     patterns = [
@@ -326,17 +326,17 @@ def get_marker(diff):
         return ""
 
 
-def is_circle_number(footnote_marker):
-    """Check whether footnote marker is number in circle or not and if so 
+def is_circle_number(footnotes_marker):
+    """Check whether footnotes marker is number in circle or not and if so 
        returns equivalent number.
 
     Args:
-        footnote_marker (str): footnote marker
+        footnotes_marker (str): footnotes marker
     Returns:
         str: number inside the circle
     """
     value = ""
-    number = re.search("[①-⓪]", footnote_marker)
+    number = re.search("[①-⓪]", footnotes_marker)
     if number:
         circle_num = {
             "⓪": "0",
@@ -365,16 +365,16 @@ def is_circle_number(footnote_marker):
     return value
 
 
-def translate_tib_number(footnote_marker):
-    """Translate tibetan numeral in footnote marker to roman number.
+def translate_tib_number(footnotes_marker):
+    """Translate tibetan numeral in footnotes marker to roman number.
 
     Args:
-        footnote_marker (str): footnote marker
+        footnotes_marker (str): footnotes marker
     Returns:
-        str: footnote marker having numbers in roman numeral
+        str: footnotes marker having numbers in roman numeral
     """
     value = ""
-    if re.search("\d+\S+(\d+)", footnote_marker):
+    if re.search("\d+\S+(\d+)", footnotes_marker):
         return value
     tib_num = {
         "༠": "0",
@@ -388,7 +388,7 @@ def translate_tib_number(footnote_marker):
         "༨": "8",
         "༩": "9",
     }
-    numbers = re.finditer("\d", footnote_marker)
+    numbers = re.finditer("\d", footnotes_marker)
     if numbers:
         for number in numbers:
             if re.search("[༠-༩]", number[0]):
@@ -398,20 +398,20 @@ def translate_tib_number(footnote_marker):
     return value
 
 
-def get_value(footnote_marker):
-    """Compute the equivalent numbers in footnote marker payload and return it.
+def get_value(footnotes_marker):
+    """Compute the equivalent numbers in footnotes marker payload and return it.
 
     Args:
-        footnote_marker (str): footnote marker
+        footnotes_marker (str): footnotes marker
     Returns:
-        str: numbers in footnote marker
+        str: numbers in footnotes marker
     """
     value = ""
-    if is_circle_number(footnote_marker):
-        value = is_circle_number(footnote_marker)
+    if is_circle_number(footnotes_marker):
+        value = is_circle_number(footnotes_marker)
         return value
-    elif translate_tib_number(footnote_marker):
-        value = translate_tib_number(footnote_marker)
+    elif translate_tib_number(footnotes_marker):
+        value = translate_tib_number(footnotes_marker)
         return value
     return value
 
@@ -423,7 +423,7 @@ def format_diff(filter_diffs_yaml_path, image_info, type_=None):
     Args:
         diffs (list): list of diffs
         image_info (list): contains work_id, volume number and image source offset
-        type_ (str): diff type can be footnote or body
+        type_ (str): diff type can be footnotes or body
     Returns:
         str: target text with transfered annotations with markers.
     """
@@ -480,7 +480,7 @@ def add_link(text, image_info):
     """Add link of source image page.
 
     Args:
-        text (str): target text having footnote maker transfered
+        text (str): target text having footnotes maker transfered
         image_info (list): contains work_id, volume number and image source offset
     Returns:
         str: target text with source image page link
@@ -543,7 +543,7 @@ def rm_marker(diff):
         diff (str): diff text
 
     Returns:
-        str: diff text without footnote marker of google ocr
+        str: diff text without footnotes marker of google ocr
     """
     result = diff
     patterns = [
@@ -607,11 +607,11 @@ def parse_pg_ref_diff(diff, result):
                 result.append([1, marker[0], "marker"])
 
 
-def reformat_footnote(text):
-    """Replace edition name with their respective unique id and brings every footnote to newline.
+def reformat_footnotes(text):
+    """Replace edition name with their respective unique id and brings every footnotes to newline.
     
     Args:
-        text (str): google OCRed footnote with namsel footnote markers transfered.
+        text (str): google OCRed footnotes with namsel footnotes markers transfered.
     Returns:
         (str): reformatted footnote
     """
@@ -743,7 +743,7 @@ def filter_diffs(diffs_yaml_path, type, image_info):
     return filter_diffs
 
 
-def filter_footnote_diffs(diffs_yaml_path, vol_num):
+def filter_footnotes_diffs(diffs_yaml_path, vol_num):
     """Filter the diffs of google ocr output and namsel ocr output.
 
     Args:
@@ -794,19 +794,19 @@ def filter_footnote_diffs(diffs_yaml_path, vol_num):
     return result
 
 
-def postprocess_footnote(footnote):
-    """Save the formatted footnote to dictionary with key as page ref and value as footnote in that page.
+def postprocess_footnotes(footnotes):
+    """Save the formatted footnotes to dictionary with key as page ref and value as footnotes in that page.
 
     Args:
-        footnote (str): formatted footnote
+        footnotes (str): formatted footnote
 
     Returns:
-        dict: key as page ref and value as footnote in that page
+        dict: key as page ref and value as footnotes in that page
     """
     result = []
 
-    page_refs = re.findall("<r.+?>", footnote)
-    pages = re.split("<r.+?>", footnote)[1:]
+    page_refs = re.findall("<r.+?>", footnotes)
+    pages = re.split("<r.+?>", footnotes)[1:]
 
     first_ref = page_refs[0]
     table = first_ref.maketrans("༡༢༣༤༥༦༧༨༩༠", "1234567890", "<r>")
@@ -818,7 +818,7 @@ def postprocess_footnote(footnote):
         for i, marker in enumerate(markers, 1):
             repl = f"<{i},{marker[0][1:-1]}>"
             page = page.replace(marker[0], repl, 1)
-        marker_list = [footnote.strip() for footnote in page.splitlines()]
+        marker_list = [footnotes.strip() for footnotes in page.splitlines()]
         marker_list[0] = f"{walker:03}-{page_ref[1:-1]}"
         # Removes the noise marker without footnote
         for marker in marker_list:
@@ -847,11 +847,11 @@ def merge_footnote_per_page(page, foot_notes):
         marker_parts = marker[0][1:-1].split(",")
         body_incremental = marker_parts[0]
         body_value = marker_parts[1]
-        footnote_parts = foot_note.split(">")
-        footnote_incremental = footnote_parts[0].split(",")[0][1:]
-        footnote_value = footnote_parts[0].split(",")[1]
-        note = footnote_parts[1]
-        repl = f"<{body_incremental},{body_value};{footnote_incremental},{footnote_value},{note}>"
+        footnotes_parts = foot_note.split(">")
+        footnotes_incremental = footnotes_parts[0].split(",")[0][1:]
+        footnotes_value = footnotes_parts[0].split(",")[1]
+        note = footnotes_parts[1]
+        repl = f"<{body_incremental},{body_value};{footnotes_incremental},{footnotes_value},{note}>"
         page = page.replace(marker[0], repl, 1)
     if foot_notes:
         result = page + f"/{foot_notes[0]}/"
@@ -875,31 +875,33 @@ def merge_footnote(body_text_path, footnote_yaml_path):
     pages = re.split("<p.+?>", body_text)[:-1]
     page_ann = re.findall("<p.+?>", body_text)
     result = ""
-    for i, (page, footnote) in enumerate(zip_longest(pages, footnotes, fillvalue=[])):
-        result += merge_footnote_per_page(page, footnote)
+    for i, (page, footnotes) in enumerate(zip_longest(pages, footnotes, fillvalue=[])):
+        result += merge_footnotes_per_page(page, footnotes)
         result += page_ann[i]
     return result
 
 
-def flow(N_path, G_path, text_type, image_info):
+def flow(vol_path, source_path, target_path, text_type, image_info):
     """ - diff is computed between B and A text
         - footnotes and footnotes markers are filtered from diffs
         - they are applied to B text with markers
         - A image links are computed and added at the end of each page
-
     Args:
         B_path (path): path of text B (namsel)
         A_path (path): path of text A (clean)
         text_type (str): type of text can be either body or footnote
         image_info (list): Contains work_id, volume number and source image offset
     """
-    N = N_path.read_text(encoding="utf-8")
-    G = G_path.read_text(encoding="utf-8")
+    volume_no = image_info[1]
+    N = source_path.read_text(encoding="utf-8")
+    G = target_path.read_text(encoding="utf-8")
     diffs_to_yaml = partial(to_yaml, type_="diffs")  # customising to_yaml function for diff list
     filtered_diffs_to_yaml = partial(
         to_yaml, type_="filtered_diffs"
     )  # customising to_yaml function for filtered diffs list
-    footnote_to_yaml = partial(to_yaml, type_="footnote")
+    footnotes_to_yaml = partial(to_yaml, type_="footnotes")
+
+    dir_path = vol_path / text_type
 
     diffs_yaml_path = base_path / "diffs.yaml"
     filtered_diffs_yaml_path = base_path / "filtered_diffs.yaml"
@@ -912,13 +914,13 @@ def flow(N_path, G_path, text_type, image_info):
             print("Calculating diffs...")
             diffs = get_diff(N, G)
             diffs_list = list(map(list, diffs))
-            diffs_to_yaml(diffs_list, base_path)
+            diffs_to_yaml(diffs_list, dir_path)
         print("Filtering diffs...")
         filtered_diffs = filter_diffs(diffs_yaml_path, "body", image_info)
-        filtered_diffs_to_yaml(filtered_diffs, base_path)
+        filtered_diffs_to_yaml(filtered_diffs, dir_path)
         new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="body")
         new_text = reformatting_body(new_text)
-        # new_text = add_link(new_text, image_info)
+        new_text = add_link(new_text, image_info)
         # new_text = rm_markers_ann(new_text)
         (base_path / f"output/result{image_info[1]}.txt").write_text(new_text, encoding="utf-8")
     elif text_type == "footnotes":
@@ -932,15 +934,15 @@ def flow(N_path, G_path, text_type, image_info):
             print("Calculating diffs..")
             diffs = get_diff(clean_N, clean_G)
             diffs_list = list(map(list, diffs))
-            diffs_to_yaml(diffs_list, base_path)
-        filtered_diffs = filter_footnote_diffs(diffs_yaml_path, image_info[1])
-        filtered_diffs_to_yaml(filtered_diffs, base_path)
-        new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="footnote")
+            diffs_to_yaml(diffs_list, dir_path)
+        filtered_diffs = filter_footnotes_diffs(diffs_yaml_path, image_info[1])
+        filtered_diffs_to_yaml(filtered_diffs, dir_path)
+        new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="footnotes")
         # new_text = rm_markers_ann(new_text)
-        new_text = reformat_footnote(new_text)
-        formatted_yaml = postprocess_footnote(new_text)
-        footnote_to_yaml(formatted_yaml, base_path)
-        (base_path / "output/result.txt").write_text(new_text, encoding="utf-8")
+        new_text = reformat_footnotes(new_text)
+        formatted_yaml = postprocess_footnotes(new_text)
+        footnotes_to_yaml(formatted_yaml, dir_path)
+        (dir_path / "result.txt").write_text(new_text, encoding="utf-8")
     else:
         print("Type not found")
     print("Done")

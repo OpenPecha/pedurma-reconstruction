@@ -1,13 +1,11 @@
-.DS_Store
 .pypyenv/
+.vscode/
 __pycache__/
-
-
 
 
 .huskyrc.json
 out
-.vscode/
+.DS_Store
 log.log
 **/node_modules
 *.pyc
