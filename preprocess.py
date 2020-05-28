@@ -1,3 +1,4 @@
+# coding='utf-8'
 from pathlib import Path
 import re
 
@@ -48,15 +49,15 @@ def preprocess_google_notes(text):
         ["([^»]+«)-", "\g<1>»-"],
         ["(«[^་]+?་)([^»])", "\g<1>»\g<2>"],
         # tag pedurma page numbers #<vol-page>#
-        [
-            "(\n[0-9]+?)((-+?)|(\n))([0-9]+?\n)",
-            "#\g<1>-\g<5>#",
-        ],  # separators FIXME not catching 73-821
-        ["([^#]\n+?)-([0-9]+?\n)", "#\g<1>-\g<2>#"],  #
+        # [
+        #     "(\n[0-9]+?)((-+?)|(\n))([0-9]+?\n)",
+        #     "#\g<1>-\g<5>#",
+        # ],  # separators FIXME not catching 73-821
+        # ["([^#]\n+?)-([0-9]+?\n)", "#\g<1>-\g<2>#"],  #
         # ['([^\d#-])([0-9]{3,10})', '\g<1>#\g<2>#'],    # not well formated
         # ['\d#(\d+?-\d+?)#«', '\g<1>«'],    # clear false positives
-        ["([02468])#", "\g<1>e#"],  # even:
-        ["([13579])#", "\g<1>o#"],  # odd: only have text། [༠-༩]
+        # ["([02468])#", "\g<1>e#"],  # even:
+        # ["([13579])#", "\g<1>o#"],  # odd: only have text། [༠-༩]
         # ['ག་', 'ག '],   # »-ཅག་༧ »གཞག་༡9 TODO
         ["\s+", " "],
         ["།\s།\s*\n", "།\n"],
@@ -68,17 +69,17 @@ def preprocess_google_notes(text):
         ["་\s*\n", "་"],
         ["་+", "་"],
         #
-        ["([^+\s་ཀ-ྼ])། ", "\g<1>?། "],  # ༧། TODO
+        # ["([^+\s་ཀ-ྼ])། ", "\g<1>?། "],  # ༧། TODO
         # special notes
-        ["(\(?པོད་འདིའི་ནང་.+?\))\s*", "{\g<1>}\n"],
-        ["(\{[^\}]+?) (.+?\})", "\g<1>_\g<2>"],  # deal with spaces in special notes
-        ["(\{[^\}]+?) (.+?\})", "\g<1>_\g<2>"],  # deal with spaces in special notes
-        ["(\{[^\}]+?) (.+?\})", "\g<1>_\g<2>"],  # deal with spaces in special notes
-        ["\(\s+?\{", "{("],  # include ( in the note
+        # ["(\(?པོད་འདིའི་ནང་.+?\))\s*", "{\g<1>}\n"],
+        # ["(\{[^\}]+?) (.+?\})", "\g<1>_\g<2>"],  # deal with spaces in special notes
+        # ["(\{[^\}]+?) (.+?\})", "\g<1>_\g<2>"],  # deal with spaces in special notes
+        # ["(\{[^\}]+?) (.+?\})", "\g<1>_\g<2>"],  # deal with spaces in special notes
+        # ["\(\s+?\{", "{("],  # include ( in the note
         # tag note markers \<<note>\>
-        ["། ([^།»\{\}]+)«", "།\n<m\g<1>>«"],
-        ["<m\n(\}\{.+?)>«", "\g<1>«"],  # fix special note markers
-        ["([ཀགཤ།] )([^།»\{\}]+)«", "\g<1>\n<m\g<2>>«"],
+        # ["། ([^།»\{\}]+)«", "།\n<m\g<1>>«"],
+        # ["<m\n(\}\{.+?)>«", "\g<1>«"],  # fix special note markers
+        # ["([ཀགཤ།] )([^།»\{\}]+)«", "\g<1>\n<m\g<2>>«"],
         # ['ཀ ([^།»\{\}]+)«', 'ཀ\n<\g<1>>«'],
         # ['ཤ ([^།»\{\}]+)«', 'ཤ\n<\g<1>>«'],
         # [' ([^ༀ-࿚]+)«', '\n<\g<1>>«'],  # catch ། @ «
@@ -86,17 +87,17 @@ def preprocess_google_notes(text):
         # ['<', ''],
         # headers ++<header>++
         # ['(#.+?e#[^།]+?།)', '#++\g<1>\g<2>++\g<3>«'],   # even
-        ["»\n", "»"],  # put all the notes split on two lines on a single one
-        ["། །\n", "།\n"],
-        ["<m.+?>", "4"],  # replace m tag with m only
+        # ["»\n", "»"],  # put all the notes split on two lines on a single one
+        # ["། །\n", "།\n"],
+        # ["<m.+?>", "4"],  # replace m tag with m only
     ]
 
     # «ཅོ་»«ཞོལ་»གྲག་༡༨)
 
     for p in patterns:
         text = re.sub(p[0], p[1], text)
+    text = translate_ref(text)
     return text
-
 
 """
 »འཁྲང་། ༄༅། «གཡུང་»
@@ -273,6 +274,9 @@ def preprocess_namsel_notes(text):
 
     for p in patterns:
         text = re.sub(p[0], p[1], text)
+    
+    text = translate_ref(text)
+
     return text
 
 
@@ -457,6 +461,7 @@ def preprocess_namsel_body(text):
 
     for p in patterns:
         text = re.sub(p[0], p[1], text)
+
     return text
 
 
@@ -476,15 +481,21 @@ def add_sn(content):
     
     return new
 
+def translate_ref(content):
+    # translating numbers to letters avoids tag splitting HACK
+    list = re.split('(<[rp][༠-༩]+?>)', content)
+    bo_ar = ''.maketrans("༡༢༣༤༥༦༧༨༩༠", "abcdefghij")
+    result = ''.join([e.translate(bo_ar) if e[1]=='r' else e for e in list])
+    return result
+
 if __name__ == "__main__":
     # Path to the initial Google OCR file
     basePath = Path("data")
 
-    # googlePath = basePath / "googleOCR_text" / "73durchen-google.txt"
-    namselPath = basePath / "v073/footnotes/73N-footnotes.txt"
 
-
+ 
     # # Google footnotes
+    # googlePath = basePath / "v073/footnotes/73G-footnotes.txt"
     # google_content = googlePath.read_text(encoding="utf-8")
     # # get text
     # googlePrep = preprocess_google_notes(google_content)
@@ -494,6 +505,7 @@ if __name__ == "__main__":
     # # googleProc = process(googlePrep, init_num)
 
     # Namsel footnotes
+    namselPath = basePath / "v073/footnotes/73N-footnotes.txt"
     namsel_content = namselPath.read_text(encoding="utf-8")
     namselPrep = preprocess_namsel_notes(namsel_content)
     with_sn = add_sn(namselPrep)

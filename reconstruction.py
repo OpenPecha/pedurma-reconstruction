@@ -1,4 +1,4 @@
-
+# coding='utf-8'
 
 """
 Pedurma footnotes Reconstruction
@@ -804,7 +804,6 @@ def postprocess_footnotes(footnotes):
     first_ref = page_refs[0]
     table = first_ref.maketrans("༡༢༣༤༥༦༧༨༩༠", "1234567890", "<r>")
     start = int(first_ref.translate(table))
-    print(start)
     for walker, (page, page_ref) in enumerate(zip_longest(pages, page_refs, fillvalue=""), start):
         markers = re.finditer("<.+?>", page)
         marker_l = []
@@ -903,13 +902,13 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         diffs_yaml_path = dir_path / "diffs.yaml"
         filtered_diffs_yaml_path = dir_path / "filtered_diffs.yaml"
         G = rm_google_ocr_header(G)
-        clean_G = preprocess_google_notes(G)
+        clean_G = preprocess_namsel_notes(G)
         clean_N = preprocess_namsel_notes(N)
         # if diffs_yaml_path.is_file():
         if 0 == 1:
             pass
         else:
-            print("Calculating diffs..")
+            print("Calculating diffs..")    
             diffs = get_diff(clean_N, clean_G)
             diffs_list = list(map(list, diffs))
             diffs_to_yaml(diffs_list, dir_path)
