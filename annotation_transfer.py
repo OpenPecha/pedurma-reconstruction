@@ -168,14 +168,14 @@ if __name__ == "__main__":
             སྤྱོད་པ་ལས་ཕྱིས་དེའི་ཆུང་མ་ལ་#བུ་ཆགས་ནས་དེ་ཟླ་བ་དགུའམ་བཅུ་ལོན་པ་
             """
 
-    base_path = Path("data/v073/")
-
-    source = (base_path / "body" / "073_མདོ་སྡེ།_ཧ.txt").read_text(encoding="utf-8")
     annotation_patterns = [["pages", "(\[\d+[ab]\])"], ["lines", "\[\d+.\.\d\]"]]
+
+    base_path = Path("data/v073/")
+    source = (base_path / "body" / "073_མདོ་སྡེ།_ཧ.txt").read_text(encoding="utf-8")
     target = (base_path / "body" / "73E-body_transfered.txt").read_text(
         encoding="utf-8"
     )
 
-    annotated = transfer(source, annotation_patterns, target, "yaml")
+    annotated = transfer(source, annotation_patterns, target, "txt")
     (base_path / "body" / "new.txt").write_text(annotated, encoding="utf-8")
 
