@@ -77,11 +77,11 @@ def preprocess_google_notes(text):
         # ["(\{[^\}]+?) (.+?\})", "\g<1>_\g<2>"],  # deal with spaces in special notes
         # ["\(\s+?\{", "{("],  # include ( in the note
         # tag note markers \<<note>\>
-        # ["། ([^།»\{\}]+)«", "།\n<m\g<1>>«"],
-        # ["<m\n(\}\{.+?)>«", "\g<1>«"],  # fix special note markers
-        # ["([ཀགཤ།] )([^།»\{\}]+)«", "\g<1>\n<m\g<2>>«"],
-        # ['ཀ ([^།»\{\}]+)«', 'ཀ\n<\g<1>>«'],
-        # ['ཤ ([^།»\{\}]+)«', 'ཤ\n<\g<1>>«'],
+        ["། ([^།»\{\}]+)«", "།\n<m\g<1>>«"],
+        ["<m\n(\}\{.+?)>«", "\g<1>«"],  # fix special note markers
+        ["([ཀགཤ།] )([^།»\{\}]+)«", "\g<1>\n<m\g<2>>«"],
+        # # ['ཀ ([^།»\{\}]+)«', 'ཀ\n<\g<1>>«'],
+        # # ['ཤ ([^།»\{\}]+)«', 'ཤ\n<\g<1>>«'],
         # [' ([^ༀ-࿚]+)«', '\n<\g<1>>«'],  # catch ། @ «
         # delete note markers
         # ['<', ''],
@@ -492,20 +492,20 @@ if __name__ == "__main__":
     # Path to the initial Google OCR file
     basePath = Path("data")
  
-    # # Google footnotes
-    # googlePath = basePath / "v073/footnotes/73G-footnotes.txt"
-    # google_content = googlePath.read_text(encoding="utf-8")
-    # # get text
-    # googlePrep = preprocess_google_notes(google_content)
-    # # get text
-    # save(googlePrep, googlePath, "_num")
+    # Google footnotes
+    googlePath = basePath / "v073/footnotes/73G-footnotes.txt"
+    google_content = googlePath.read_text(encoding="utf-8")
+    # get text
+    googlePrep = preprocess_google_notes(google_content)
+    # get text
+    save(googlePrep, googlePath, "_num")
     # # get text
     # # googleProc = process(googlePrep, init_num)
 
     # Namsel footnotes
-    namselPath = basePath / "v073/footnotes/73N-footnotes.txt"
-    namsel_content = namselPath.read_text(encoding="utf-8")
-    namselPrep = preprocess_namsel_notes(namsel_content)
-    with_sn = add_sn(namselPrep)
-    save(with_sn, namselPath, "_num")
+    # namselPath = basePath / "v073/footnotes/73N-footnotes.txt"
+    # namsel_content = namselPath.read_text(encoding="utf-8")
+    # namselPrep = preprocess_namsel_notes(namsel_content)
+    # with_sn = add_sn(namselPrep)
+    # save(with_sn, namselPath, "_num")
 

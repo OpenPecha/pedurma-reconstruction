@@ -189,12 +189,12 @@ def get_excep_marker(diff):
         str: exception marker
     """
     marker_ = ""
-    patterns = ["པོ་", "འི", "ཚོ་", "རིན", "\(", "\)", "།\S+", "〉", "ཏུཉེ", "ཡོཉེ"]
+    patterns = ["<m(.+?)>", "(.*#.*)"]
     for pattern in patterns:
         marker = re.search(pattern, diff)
         if re.search(pattern, diff):
             marker = re.search(pattern, diff)
-            marker_ += marker[0]
+            marker_ = marker.group(1)
     return marker_
 
 
@@ -207,7 +207,7 @@ def is_punct(char):
     Returns:
         flag: true if char is punctuation false if not
     """
-    if char in ["་", "།", "༔", ":", "། །", "#"]:
+    if char in ["་", "།", "༔", ":", "། །", "༄", "༅"]:
         return True
     else:
         return False
@@ -241,10 +241,22 @@ def is_midsyl(left_diff, right_diff):
         boolean : True if it is mid syllabus else False
     """
     if left_diff:
-        if (is_punct(left_diff[-1]) == False) and (is_punct(right_diff[0]) == False):
+        right_diff_text = right_diff.replace('\n','')
+        left_diff_text = left_diff.replace('\n','')
+        if not right_diff_text or not left_diff_text:
+            return False
+        if (is_punct(left_diff_text[-1]) == False) and (is_punct(right_diff_text[0]) == False):
             return True
     return False
 
+def double_mid_syl_marker(result, diff):
+    i= -1
+    while not is_punct(result[i][1]):
+        if result[i][2] == 'marker':
+            return False
+        else:
+            i -= 1
+    return True
 
 def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type=None):
     """Handle the middle of syllabus diff text in different situation.
@@ -259,30 +271,34 @@ def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type=No
         marker_type (str): marker type can be marker or candidate marker
     """
     # make it marker if marker found  (revision)
-    diff_ = rm_noise(diff[1])
-    if left_diff[1][-1] == " ":
-        lasttwo = left_diff[1][-2:]
-        result[-1][1] = result[-1][1][:-2]
-        result.append([1, diff_, "mid_syl_marker"])
-        diffs[i + 1][1] = lasttwo + diffs[i + 1][1]
-    elif right_diff[1][0] == " ":
-        result.append([1, diff_, "mid_syl_marker"])
-    else:
-        if isvowel(right_diff[1][0]):
-            result[-1][1] += right_diff[1][0]
-            if len(right_diff[1]) > 1:
-                syls = right_diff[1].split("་")
-                first_syl = syls[0][1:] + "་"
-                result[-1][1] += first_syl
-                diffs[i + 1][1] = diffs[i + 1][1][len(first_syl) :]
-            diffs[i + 1][1] = diffs[i + 1][1][1:]
-            result.append([1, diff_, "mid_syl_marker"])
+    if double_mid_syl_marker(result, diff):
+        diff_ = rm_noise(diff[1])
+        if left_diff[1][-1] == " ":
+            lasttwo = left_diff[1][-2:]
+            result[-1][1] = result[-1][1][:-2]
+            result.append([1, diff_, f'{marker_type}'])
+            diffs[i + 1][1] = lasttwo + diffs[i + 1][1]
+        elif right_diff[1][0] == " ":
+            result.append([1, diff_, f'{marker_type}'])
+        elif isvowel(left_diff[1][-1]):
+            syls = re.split("(་|།)",right_diff[1])
+            first_syl = syls[0]
+            result[-1][1] += first_syl
+            diffs[i + 1][1] = diffs[i + 1][1][len(first_syl) :]
+            result.append([1, diff_, f'{marker_type}'])
         else:
-            if left_diff[0] != (0 or 1):       # FIXME this deletes text from 0 and 1
-                lastsyl = left_diff[1].split("་")[-1]
-                result[-1][1] = result[-1][1][: -len(lastsyl)] 
-                result.append([1, diff_, "mid_syl_marker"])
-                diffs[i + 1][1] = lastsyl + diffs[i + 1][1]
+            if isvowel(right_diff[1][0]):
+                syls = re.split("(་|།)",right_diff[1])
+                first_syl = syls[0]
+                result[-1][1] += first_syl
+                diffs[i + 1][1] = diffs[i + 1][1][len(first_syl):]
+                result.append([1, diff_, f'{marker_type}'])
+            else:
+                if left_diff[0] != (0 or 1):       # FIXME this deletes text from 0 and 1
+                    lastsyl = left_diff[1].split("་")[-1]
+                    result[-1][1] = result[-1][1][: -len(lastsyl)] 
+                    result.append([1, diff_, f'{marker_type}'])
+                    diffs[i + 1][1] = lastsyl + diffs[i + 1][1]
 
 
 def handle_google_marker(diff, result):
@@ -435,6 +451,8 @@ def format_diff(filter_diffs_yaml_path, image_info, type_=None):
     for diff_type, diff_text, diff_tag in diffs:
         # if diff_type == 0:
         #     result += diff_text
+        # if diff_text == '<m༅>':
+        #     print('check')
         if diff_type == 1 or diff_type == 0:
             if diff_tag:
                 if diff_tag == "pedurma-page" and type_ == "body":
@@ -609,6 +627,15 @@ def parse_pg_ref_diff(diff, result):
                 result.append([1, marker[0], "marker"])
 
 
+def double_marker_handler(result):
+    prev2 = result[-3]
+    prev1 = result[-2]
+    cur = result[-1]
+    if cur[2] == 'marker':
+        if prev2[2] == 'marker' and prev1[1] in ['\n', ' ', '', '།']:
+            del result[-1]
+
+
 def reformat_footnotes(text):
     """Replace edition name with their respective unique id and brings every footnotes to newline.
     
@@ -630,8 +657,8 @@ def reformat_footnotes(text):
     ]
     text = text.replace("\n", "")
     text = re.sub("(<+)", r"\n\1", text)
-    for edition, edition_id in editions:
-        text = text.replace(edition, edition_id)
+    # for edition, edition_id in editions:
+    #     text = text.replace(edition, edition_id)
     return text
 
 
@@ -654,19 +681,17 @@ def filter_diffs(diffs_yaml_path, type, image_info):
     for i, diff in enumerate(diffs):
         if diff[0] == 0:  # in both
             result.append([diff[0], diff[1], ""])
-        if diff[1] == 'བ་གཞན་གྱི་ཚལ་':
-            continue
+        
         elif diff[0] == 1:  # in target
-            if re.search("#", diff[1]):
-                handle_google_marker(diff[1], result)
-            else:
-                result.append([diff[0], diff[1], ""])
+            result.append([diff[0], diff[1], ""])
         elif diff[0] == -1:  # in source
+            
             if re.search(
                 f"{vol_num}་?\D་?\d+", diff[1]
             ):  # checking diff text is page or not
                 result.append([1, diff[1], "pedurma-page"])
             else:
+                
                 if i > 0:  # extracting left context of current diff
                     left_diff = diffs[i - 1]
                 if i < len(diffs) - 1:  # extracting right context of current diff
@@ -707,6 +732,8 @@ def filter_diffs(diffs_yaml_path, type, image_info):
                             tseg_shifter(result, diffs, left_diff, i, right_diff)
                             result.append([1, diff_, "marker"])
                 elif right_diff[0] == 1:
+                    if diff[1] == 'གཤེ':
+                        print('check')
                     # Check if current diff is located in middle of syllabus or not.
                     if is_midsyl(left_diff[1], right_diff[1]) and get_marker(diff[1]):
                         handle_mid_syl(
@@ -717,10 +744,10 @@ def filter_diffs(diffs_yaml_path, type, image_info):
                         # be shift to left last as there are no marker before tseg.
                         tseg_shifter(result, diffs, left_diff, i, right_diff)
                         result.append([1, diff_, "marker"])
-                        if "#" in right_diff[1]:
-                            diffs[i + 1][1] = diffs[i + 1][1].replace("#", "")
+                        # if "#" in right_diff[1]:
+                        #     diffs[i + 1][1] = diffs[i + 1][1].replace("#", "")
                     else:
-                        if diff_ != "" and right_diff[1] in ["\n", " "]:
+                        if diff_ != "" and right_diff[1] in ["\n", " ", "་"]:
                             if (
                                 "ང" in left_diff[1][-2:] and diff_ == "སྐེ"
                             ):  # an exception case where candidate fails to be marker.
@@ -738,9 +765,10 @@ def filter_diffs(diffs_yaml_path, type, image_info):
                             else:
                                 tseg_shifter(result, diffs, left_diff, i, right_diff)
                                 result.append([1, diff_, "marker"])
-                                if "#" in right_diff[1]:
-                                    diffs[i + 1][1] = diffs[i + 1][1].replace("#", "")
+                                # if "#" in right_diff[1]:
+                                #     diffs[i + 1][1] = diffs[i + 1][1].replace("#", "")
                     # if diff_ is not empty and right diff is ['\n', ' '] then make it candidate markrer
+                double_marker_handler(result)
 
     filter_diffs = result
 
@@ -819,6 +847,11 @@ def postprocess_footnotes(footnotes):
         # result[f"{walker:03}-{page_ref[1:-1]}"] = marker_list[1:]
     return result
 
+def rm_diff_tag(filtered_diffs):
+    result = []
+    for diff in filtered_diffs:
+        result.append([diff[0], diff[1]])
+    return result
 
 def merge_footnotes_per_page(page, foot_notes):
     """Merge the footnote of a certain page to its body text.
@@ -830,7 +863,8 @@ def merge_footnotes_per_page(page, foot_notes):
     Returns:
         str: content of page attached with their footnote adjacent to their marker
     """
-        
+    with_marker = page
+    without_marker = page  
     markers = re.finditer("<.+?>", page)
     for i, (marker, foot_note) in enumerate(zip(markers, foot_notes[1:])):
         marker_parts = marker[0][1:-1].split(",")
@@ -840,13 +874,17 @@ def merge_footnotes_per_page(page, foot_notes):
         footnotes_incremental = footnotes_parts[0].split(",")[0][1:]
         footnotes_value = footnotes_parts[0].split(",")[1]
         note = footnotes_parts[1]
-        repl = f"<{body_incremental},{body_value};{footnotes_incremental},{footnotes_value},{note}>"
-        page = page.replace(marker[0], repl, 1)
+        repl1 = f"<{body_incremental},{body_value};{footnotes_incremental},{footnotes_value},{note}>"
+        repl2 = f"<{note}>"
+        with_marker = with_marker.replace(marker[0], repl1, 1)
+        without_marker = without_marker.replace(marker[0], repl2, 1)
     if foot_notes:
-        result = page + f"/{foot_notes[0]}/"
+        result_with_marker  = with_marker + f"/{foot_notes[0]}/"
+        # result_without_marker = without_marker + f"/{foot_notes[0]}/"
     else:
-        result = page
-    return result
+        result_with_marker  = with_marker
+    result_without_marker = without_marker
+    return result_with_marker, result_without_marker
 
 
 def merge_footnote(body_text_path, footnote_yaml_path):
@@ -863,17 +901,24 @@ def merge_footnote(body_text_path, footnote_yaml_path):
     footnotes = from_yaml(footnote_yaml_path)
     pages = re.split("<p.+?>", body_text)[:-1]
     page_ann = re.findall("<p.+?>", body_text)
-    result = ""
+    result_with_marker = ""
+    result_without_marker = ""
     for i, (page, footnotes) in enumerate(zip_longest(pages, footnotes, fillvalue=[])):
         try:
-            result += merge_footnotes_per_page(page, footnotes)
+            with_marker, without_marker = merge_footnotes_per_page(page, footnotes)
+            result_with_marker += with_marker
+            result_without_marker += without_marker
         except:
-            result += f'pages: {len(page)}, footnotes: {len(footnotes)}'
+            result_with_marker += f'pages: {len(page)}, footnotes: {len(footnotes)}'
         try:
-            result += page_ann[i]
+            with_marker = page_ann[i]
+            result_with_marker += with_marker
+            #result_without_marker += without_marker
         except:
-            result += 'page missing!'
-    return result
+            result_with_marker += 'page missing!'
+        result_without_marker = result_without_marker.replace("\n", "")
+        result_without_marker = re.sub("(\[.+?\])", r"\n\1", result_without_marker)
+    return result_with_marker, result_without_marker
 
 
 def flow(vol_path, source_path, target_path, text_type, image_info):
@@ -902,21 +947,20 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
     filtered_diffs_yaml_path = dir_path / "filtered_diffs.yaml"
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
-        if diffs_yaml_path.is_file():
-        # if 0 == 1:
-            pass
-        else:
-            print("Calculating diffs...")
-            diffs = get_diff(N, G)
-            diffs_list = list(map(list, diffs))
-            diffs_to_yaml(diffs_list, dir_path)
+        # patterns = [['google_marker','(#)'],["pages", "\[\d+[ab]\]"]]
+        # transformed_namsel = transfer(G, patterns, N, output='txt')
+        # N = transformed_namsel.replace('#་','་#')
+        # G = G.replace('#','')
+        print("Calculating diffs...")
+        diffs = get_diff(N, G)
+        diffs_list = list(map(list, diffs))
+        diffs_to_yaml(diffs_list, dir_path)
         print("Filtering diffs...")
         filtered_diffs = filter_diffs(diffs_yaml_path, "body", image_info)
+        #filtered_diffs = rm_diff_tag(filtered_diffs)
         filtered_diffs_to_yaml(filtered_diffs, dir_path)
         new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="body")
         new_text = reformatting_body(new_text)
-        new_text = add_link(new_text, image_info)
-        # new_text = rm_markers_ann(new_text)
         (dir_path / f"result.txt").write_text(new_text, encoding="utf-8")
     elif text_type == "footnotes":
         annotations = [
@@ -928,13 +972,10 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         G = rm_google_ocr_header(G)
         clean_G = preprocess_google_notes(G)
         clean_N = preprocess_namsel_notes(N)
-        if diffs_yaml_path.is_file():
-            pass
-        else:
-            print("Calculating diffs..")
-            diffs = transfer(clean_N, annotations, clean_G)
-            diffs_list = list(map(list, diffs))
-            diffs_to_yaml(diffs_list, dir_path)
+        print("Calculating diffs..")
+        diffs = transfer(clean_N, annotations, clean_G)
+        diffs_list = list(map(list, diffs))
+        diffs_to_yaml(diffs_list, dir_path)
         filtered_diffs = filter_footnotes_diffs(diffs_yaml_path, image_info[1])
         filtered_diffs_to_yaml(filtered_diffs, dir_path)
         new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="footnotes")
@@ -958,7 +999,7 @@ if __name__ == "__main__":
         vol_num,
         16,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
-    text_types = ["body",]
+    text_types = ["body","footnotes"]
     base_path = Path(f'./data/v{vol_num:03}')
     for text_type in text_types:
         if text_type == 'body':
@@ -968,13 +1009,18 @@ if __name__ == "__main__":
         N_path = base_path / text_type / f'{vol_num}N-{text_type}.txt'
         flow(base_path, N_path, G_path, text_type, image_info)
         print(f'{text_type} part done..')
-    # body_result_path = base_path / f'body/result.txt'
-    # footnote_yaml_path = base_path / f'footnotes/footnotes.yaml'
-    # if body_result_path.is_file() and footnote_yaml_path.is_file():
-    #     print('Merge start..')
-    #     merge_result = merge_footnote(body_result_path, footnote_yaml_path)
-    #     new_text = add_link(merge_result, image_info)
-    #     (base_path / f"{vol_num}_combined.txt").write_text(
-    #         merge_result, encoding="utf-8"
-    #     )
-    #     print('Merge complete.')
+    body_result_path = base_path / f'body/result.txt'
+    footnote_yaml_path = base_path / f'footnotes/footnotes.yaml'
+    merge_marker = ''
+    merge = ''
+    if body_result_path.is_file() and footnote_yaml_path.is_file():
+        print('Merge start..')
+        merge_marker, merge = merge_footnote(body_result_path, footnote_yaml_path)
+        merge_marker = add_link(merge_marker, image_info)
+        (base_path / f"{vol_num}_combined_marker.txt").write_text(
+            merge_marker, encoding="utf-8"
+        )
+        (base_path / f"{vol_num}_combined.txt").write_text(
+            merge, encoding="utf-8"
+        )
+        print('Merge complete.')

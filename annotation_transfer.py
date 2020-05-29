@@ -171,13 +171,14 @@ if __name__ == "__main__":
 """
 
 
-    # base_path = Path("data/v073/")
-    # source = (base_path / "body" / "073_མདོ་སྡེ།_ཧ.txt").read_text(encoding="utf-8")
+    base_path = Path("data/v073/")
+    source = (base_path / "body" / "73E-body_transfered.txt").read_text(encoding="utf-8")
     # annotation_patterns = [["pages", "(\[\d+[ab]\])"], ["lines", "\[\d+.\.\d\]"]]
-    # target = (base_path / "body" / "73E-body_transfered.txt").read_text(
-    #     encoding="utf-8"
-    # )
-
-    annotated = transfer(source, annotation_patterns, target, "yaml")
+    annotation_patterns = [['line_break','(\n)'],["pages", "\[\d+[ab]\]"]]
+    target = (base_path / "body" / "73N-body.txt").read_text(
+        encoding="utf-8"
+    ).replace('\n', '')
+    
+    annotated = transfer(source, annotation_patterns, target, "txt")
     Path("annotated.txt").write_text(annotated, encoding="utf-8")
 
