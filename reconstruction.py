@@ -17,7 +17,7 @@ from functools import partial
 import yaml
 from diff_match_patch import diff_match_patch
 from preprocess import preprocess_google_notes, preprocess_namsel_notes
-from transfer import transfer
+from annotation_transfer import transfer
 from horology import timed
 
 
@@ -278,10 +278,11 @@ def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type=No
             diffs[i + 1][1] = diffs[i + 1][1][1:]
             result.append([1, diff_, f"{marker_type}"])
         else:
-            lastsyl = left_diff[1].split("་")[-1]
-            result[-1][1] = result[-1][1][: -len(lastsyl)]
-            result.append([1, diff_, f"{marker_type}"])
-            diffs[i + 1][1] = lastsyl + diffs[i + 1][1]
+            if left_diff[0] != (0 or 1):       # FIXME this deletes text from 0 and 1
+                lastsyl = left_diff[1].split("་")[-1]
+                result[-1][1] = result[-1][1][: -len(lastsyl)] 
+                result.append([1, diff_, f"{marker_type}"])
+                diffs[i + 1][1] = lastsyl + diffs[i + 1][1]
 
 
 def handle_google_marker(diff, result):
@@ -651,14 +652,16 @@ def filter_diffs(diffs_yaml_path, type, image_info):
     vol_num = image_info[1]
     diffs = from_yaml(diffs_yaml_path)
     for i, diff in enumerate(diffs):
-        if diff[0] == 0:  # in B not in A
+        if diff[0] == 0:  # in both
             result.append([diff[0], diff[1], ""])
-        elif diff[0] == 1:
+        if diff[1] == 'བ་གཞན་གྱི་ཚལ་':
+            continue
+        elif diff[0] == 1:  # in target
             if re.search("#", diff[1]):
                 handle_google_marker(diff[1], result)
             else:
                 result.append([diff[0], diff[1], ""])
-        elif diff[0] == -1:  # in A not in B
+        elif diff[0] == -1:  # in source
             if re.search(
                 f"{vol_num}་?\D་?\d+", diff[1]
             ):  # checking diff text is page or not
@@ -670,7 +673,7 @@ def filter_diffs(diffs_yaml_path, type, image_info):
                     right_diff = diffs[i + 1]
                 diff_ = rm_noise(diff[1])  # removes unwanted new line, space and punct
                 if left_diff[0] == 0 and right_diff[0] == 0:
-                    # checks if current diff text is located in middle of a syllebus
+                    # checks if current diff text is located in middle of a syllable
                     if is_midsyl(left_diff[1], right_diff[1],) and get_marker(diff[1]):
                         handle_mid_syl(
                             result, diffs, left_diff, i, diff, right_diff, marker_type="marker"
