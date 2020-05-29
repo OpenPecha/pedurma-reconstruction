@@ -207,7 +207,7 @@ def is_punct(char):
     Returns:
         flag: true if char is punctuation false if not
     """
-    if char in ["་", "།", "༔", ":", "། །"]:
+    if char in ["་", "།", "༔", ":", "། །", "#"]:
         return True
     else:
         return False
@@ -263,10 +263,10 @@ def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type=No
     if left_diff[1][-1] == " ":
         lasttwo = left_diff[1][-2:]
         result[-1][1] = result[-1][1][:-2]
-        result.append([1, diff_, f"{marker_type}"])
+        result.append([1, diff_, "mid_syl_marker"])
         diffs[i + 1][1] = lasttwo + diffs[i + 1][1]
     elif right_diff[1][0] == " ":
-        result.append([1, diff_, f"{marker_type}"])
+        result.append([1, diff_, "mid_syl_marker"])
     else:
         if isvowel(right_diff[1][0]):
             result[-1][1] += right_diff[1][0]
@@ -276,12 +276,12 @@ def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type=No
                 result[-1][1] += first_syl
                 diffs[i + 1][1] = diffs[i + 1][1][len(first_syl) :]
             diffs[i + 1][1] = diffs[i + 1][1][1:]
-            result.append([1, diff_, f"{marker_type}"])
+            result.append([1, diff_, "mid_syl_marker"])
         else:
             if left_diff[0] != (0 or 1):       # FIXME this deletes text from 0 and 1
                 lastsyl = left_diff[1].split("་")[-1]
                 result[-1][1] = result[-1][1][: -len(lastsyl)] 
-                result.append([1, diff_, f"{marker_type}"])
+                result.append([1, diff_, "mid_syl_marker"])
                 diffs[i + 1][1] = lastsyl + diffs[i + 1][1]
 
 
@@ -766,9 +766,12 @@ def filter_footnotes_diffs(diffs_yaml_path, vol_num):
         elif diff[0] == 1:
             if i > 0:  # extracting left context of current diff
                 left_diff = diffs[i - 1]
+            if i < len(diffs) - 1:  # extracting right context of current diff
+                    right_diff = diffs[i + 1]
             if left_diff[2] != 'marker':
                 if '4' in diff[1]:
-                    if re.search('\d{2}', diff[1]):
+                    right_diff_text = rm_noise(right_diff[1])
+                    if re.search('\d{2}', diff[1]) or not right_diff_text:
                         continue
                     clean_diff = re.sub('[^4|\n]', '', diff[1])
                     filtered_diffs.append([0, clean_diff, 'marker' ])
@@ -925,8 +928,7 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         G = rm_google_ocr_header(G)
         clean_G = preprocess_google_notes(G)
         clean_N = preprocess_namsel_notes(N)
-        # if diffs_yaml_path.is_file():
-        if 0 == 1:
+        if diffs_yaml_path.is_file():
             pass
         else:
             print("Calculating diffs..")
@@ -956,7 +958,7 @@ if __name__ == "__main__":
         vol_num,
         16,
     ]  # [<kangyur: W1PD96682/tengyur: W1PD95844>, <volume>, <offset>]
-    text_types = ["body", "footnotes"]
+    text_types = ["body",]
     base_path = Path(f'./data/v{vol_num:03}')
     for text_type in text_types:
         if text_type == 'body':
@@ -966,13 +968,13 @@ if __name__ == "__main__":
         N_path = base_path / text_type / f'{vol_num}N-{text_type}.txt'
         flow(base_path, N_path, G_path, text_type, image_info)
         print(f'{text_type} part done..')
-    body_result_path = base_path / f'body/result.txt'
-    footnote_yaml_path = base_path / f'footnotes/footnotes.yaml'
-    if body_result_path.is_file() and footnote_yaml_path.is_file():
-        print('Merge start..')
-        merge_result = merge_footnote(body_result_path, footnote_yaml_path)
-        new_text = add_link(merge_result, image_info)
-        (base_path / f"{vol_num}_combined.txt").write_text(
-            merge_result, encoding="utf-8"
-        )
-        print('Merge complete.')
+    # body_result_path = base_path / f'body/result.txt'
+    # footnote_yaml_path = base_path / f'footnotes/footnotes.yaml'
+    # if body_result_path.is_file() and footnote_yaml_path.is_file():
+    #     print('Merge start..')
+    #     merge_result = merge_footnote(body_result_path, footnote_yaml_path)
+    #     new_text = add_link(merge_result, image_info)
+    #     (base_path / f"{vol_num}_combined.txt").write_text(
+    #         merge_result, encoding="utf-8"
+    #     )
+    #     print('Merge complete.')
