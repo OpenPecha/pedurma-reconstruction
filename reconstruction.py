@@ -765,7 +765,9 @@ def filter_footnotes_diffs(diffs_yaml_path, vol_num):
                 left_diff = diffs[i - 1]
             if left_diff[2] != 'marker':
                 if '4' in diff[1]:
-                    clean_diff = re.sub('[^4|\n]', '', left_diff[1])
+                    if re.search('\d{2}', diff[1]):
+                        continue
+                    clean_diff = re.sub('[^4|\n]', '', diff[1])
                     filtered_diffs.append([0, clean_diff, 'marker' ])
                 else:
                     diff[1] = rm_marker(diff[1])
@@ -889,22 +891,23 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
     filtered_diffs_yaml_path = dir_path / "filtered_diffs.yaml"
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
-        if diffs_yaml_path.is_file():
-        if 0 == 1:
-            pass
-        else:
-            print("Calculating diffs...")
-            diffs = get_diff(N, G)
-            diffs_list = list(map(list, diffs))
-            diffs_to_yaml(diffs_list, dir_path)
-        print("Filtering diffs...")
-        filtered_diffs = filter_diffs(diffs_yaml_path, "body", image_info)
-        filtered_diffs_to_yaml(filtered_diffs, dir_path)
-        new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="body")
-        new_text = reformatting_body(new_text)
-        new_text = add_link(new_text, image_info)
-        # new_text = rm_markers_ann(new_text)
-        (dir_path / f"result.txt").write_text(new_text, encoding="utf-8")
+        # if diffs_yaml_path.is_file():
+        # if 0 == 1:
+        #     pass
+        # else:
+        #     print("Calculating diffs...")
+        #     diffs = get_diff(N, G)
+        #     diffs_list = list(map(list, diffs))
+        #     diffs_to_yaml(diffs_list, dir_path)
+        # print("Filtering diffs...")
+        # filtered_diffs = filter_diffs(diffs_yaml_path, "body", image_info)
+        # filtered_diffs_to_yaml(filtered_diffs, dir_path)
+        # new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="body")
+        # new_text = reformatting_body(new_text)
+        # new_text = add_link(new_text, image_info)
+        # # new_text = rm_markers_ann(new_text)
+        # (dir_path / f"result.txt").write_text(new_text, encoding="utf-8")
+        pass
     elif text_type == "footnotes":
         annotations = [
         ["marker", "(<m.+?>)"],
@@ -915,14 +918,14 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         G = rm_google_ocr_header(G)
         clean_G = preprocess_google_notes(G)
         clean_N = preprocess_namsel_notes(N)
-        if diffs_yaml_path.is_file():
-        if 0 == 1:
-            pass
-        else:
-            print("Calculating diffs..")
-            diffs = transfer(clean_N, annotations, clean_G)
-            diffs_list = list(map(list, diffs))
-            diffs_to_yaml(diffs_list, dir_path)
+        # if diffs_yaml_path.is_file():
+        # if 0 == 1:
+        #     pass
+        # else:
+        #     print("Calculating diffs..")
+        #     diffs = transfer(clean_N, annotations, clean_G)
+        #     diffs_list = list(map(list, diffs))
+        #     diffs_to_yaml(diffs_list, dir_path)
         filtered_diffs = filter_footnotes_diffs(diffs_yaml_path, image_info[1])
         filtered_diffs_to_yaml(filtered_diffs, dir_path)
         new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="footnotes")
