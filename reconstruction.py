@@ -676,7 +676,7 @@ def reformat_footnotes(text):
         (str): reformatted footnote
     """
     text = text.replace("\n", "")
-    text = re.sub("(<+)", r"\n\g<1>", text)
+    text = re.sub("(<+)", r"\n\1", text)
     result = demultiply_diffs(text)
 
     editions = [
@@ -893,18 +893,15 @@ def demultiply_diffs(text):
     Returns:
         str -- [description]
     """
-    Path('data/v073/footnotes/snippet.txt').write_text(text[:1000], encoding='utf-8')
     patterns = [
         ["(\n<\d+,)([①-⓪])([①-⓪])([①-⓪])([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<7>\g<1>\g<3>\g<7>\g<1>\g<4>\g<7>\g<1>\g<5>\g<7>\g<1>\g<6>\g<7>"],
         ["(\n<\d+,)([①-⓪])([①-⓪])([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<6>\g<1>\g<3>\g<6>\g<1>\g<4>\g<6>\g<1>\g<5>\g<6>"],
         ["(\n<\d+,)([①-⓪])([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<5>\g<1>\g<3>\g<5>\g<1>\g<4>\g<5>"],
         ["(\n<\d+,)([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<4>\g<1>\g<3>\g<4>"],
     ]
-
     for p in patterns:
-        result = re.sub(p[0], p[1], text)
-    Path('data/v073/footnotes/snippet.txt').write_text(result[:1000], encoding='utf-8')
-    return result
+        text = re.sub(p[0], p[1], text)
+    return text
 
 @timed(unit="min")
 def rm_diff_tag(filtered_diffs):
@@ -1045,10 +1042,10 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         filtered_diffs_to_yaml(filtered_diffs, dir_path)
         new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="footnotes")
         # new_text = rm_markers_ann(new_text)
-        new_text = reformat_footnotes(new_text)
-        formatted_yaml = postprocess_footnotes(new_text)
+        reformatted_footnotes = reformat_footnotes(new_text)
+        formatted_yaml = postprocess_footnotes(reformatted_footnotes)
         footnotes_to_yaml(formatted_yaml, dir_path)
-        (dir_path / "result.txt").write_text(new_text, encoding="utf-8")
+        (dir_path / "result.txt").write_text(reformatted_footnotes, encoding="utf-8")
     else:
         print("Type not found")
     print("Done")
@@ -1068,7 +1065,7 @@ if __name__ == "__main__":
     for text_type in text_types:
         if text_type == 'body':
             G_path = base_path / text_type / f'{vol_num}E-{text_type}_transfered.txt'
-        elif text_type == 'footnotes':
+        else:
             G_path = base_path / text_type / f'{vol_num}G-{text_type}.txt'
         N_path = base_path / text_type / f'{vol_num}N-{text_type}.txt'
         flow(base_path, N_path, G_path, text_type, image_info)
