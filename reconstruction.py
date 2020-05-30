@@ -21,6 +21,7 @@ from annotation_transfer import transfer
 from horology import timed
 
 
+@timed(unit="min")
 def preprocess_footnotes(B, A):
     """Normalise edition markers to minimise noise in diffs.
 
@@ -40,6 +41,7 @@ def preprocess_footnotes(B, A):
     return clean_N, clean_G
 
 
+@timed(unit="min")
 def rm_google_ocr_header(text):
     """Remove header of google ocr
 
@@ -52,6 +54,7 @@ def rm_google_ocr_header(text):
     header_pattern = "\n\n\n\n{1,18}.+\n(.{1,30}\n)?(.{1,15}\n)?(.{1,15}\n)?(.{1,15}\n)?"
     result = re.sub(header_pattern, "\n\n\n", text)
     return result
+
 
 
 @timed(unit="min")
@@ -74,6 +77,7 @@ def get_diff(B, A):
     return diffs
 
 
+@timed(unit="min")
 def to_yaml(list_, vol_path, type_=None):
     """Dump list to yaml and write the yaml to a file on mentioned path.
 
@@ -89,6 +93,7 @@ def to_yaml(list_, vol_path, type_=None):
     print(f"{type_} Yaml saved...")
 
 
+@timed(unit="min")
 def from_yaml(path):
     """Load yaml to list
     Args:
@@ -101,6 +106,8 @@ def from_yaml(path):
     return diffs_list
 
 
+# HACK is that useful?
+# @timed(unit="min")
 def rm_noise(diff):
     """Filter out noise from diff text.
 
@@ -122,6 +129,7 @@ def rm_noise(diff):
     return result
 
 
+@timed(unit="min")
 def rm_markers_ann(text):
     """Remove page annotation and replace footnotesmarker with #.
 
@@ -140,6 +148,7 @@ def rm_markers_ann(text):
     return result
 
 
+# @timed(unit="min")
 def get_pg_ann(diff, vol_num):
     """Extract pedurma page and put page annotation.
 
@@ -157,6 +166,7 @@ def get_pg_ann(diff, vol_num):
     return f"<p{vol_num}-{pg_num}>"
 
 
+# @timed(unit="min")
 def get_abs_marker(diff):
     """Extract absolute footnotes marker from diff text.
 
@@ -168,7 +178,7 @@ def get_abs_marker(diff):
     """
     marker_ = ""
     patterns = [
-        "[①-⓪]",
+        "[①-⓪]+",
         "[༠-༩]+",
         "[0-9]+",
     ]
@@ -179,6 +189,7 @@ def get_abs_marker(diff):
     return marker_
 
 
+# @timed(unit="min")
 def get_excep_marker(diff):
     """Check is diff belong to exception marker or not if so returns it.
 
@@ -198,6 +209,7 @@ def get_excep_marker(diff):
     return marker_
 
 
+# @timed(unit="min")
 def is_punct(char):
     """Check whether char is tibetan punctuation or not.
 
@@ -213,6 +225,7 @@ def is_punct(char):
         return False
 
 
+# @timed(unit="min")
 def isvowel(char):
     """Check whether char is tibetan vowel or not.
 
@@ -230,6 +243,7 @@ def isvowel(char):
     return flag
 
 
+# @timed(unit="min")
 def is_midsyl(left_diff, right_diff):
     """Check if current diff is mid syllabus.
 
@@ -249,6 +263,7 @@ def is_midsyl(left_diff, right_diff):
             return True
     return False
 
+# @timed(unit="min")
 def double_mid_syl_marker(result, diff):
     i= -1
     while not is_punct(result[i][1]):
@@ -258,6 +273,7 @@ def double_mid_syl_marker(result, diff):
             i -= 1
     return True
 
+# @timed(unit="min")
 def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type=None):
     """Handle the middle of syllabus diff text in different situation.
 
@@ -301,6 +317,7 @@ def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type=No
                     diffs[i + 1][1] = lastsyl + diffs[i + 1][1]
 
 
+# @timed(unit="min")
 def handle_google_marker(diff, result):
     extras = re.sub("#", "", diff)
     if result:
@@ -310,6 +327,7 @@ def handle_google_marker(diff, result):
     result.append([1, "#", "marker"])
 
 
+# @timed(unit="min")
 def tseg_shifter(result, diffs, left_diff, i, right_diff):
     """Shift tseg if right diff starts with one and left diff ends with non punct.
 
@@ -325,6 +343,7 @@ def tseg_shifter(result, diffs, left_diff, i, right_diff):
         diffs[i + 1][1] = diffs[i + 1][1][1:]
 
 
+# @timed(unit="min")
 def get_marker(diff):
     """Extarct marker from diff text.
 
@@ -344,6 +363,7 @@ def get_marker(diff):
         return ""
 
 
+# @timed(unit="min")
 def is_circle_number(footnotes_marker):
     """Check whether footnotes marker is number in circle or not and if so 
        returns equivalent number.
@@ -383,6 +403,7 @@ def is_circle_number(footnotes_marker):
     return value
 
 
+# @timed(unit="min")
 def translate_tib_number(footnotes_marker):
     """Translate tibetan numeral in footnotes marker to roman number.
 
@@ -416,6 +437,7 @@ def translate_tib_number(footnotes_marker):
     return value
 
 
+# @timed(unit="min")
 def get_value(footnotes_marker):
     """Compute the equivalent numbers in footnotes marker payload and return it.
 
@@ -432,6 +454,7 @@ def get_value(footnotes_marker):
         value = translate_tib_number(footnotes_marker)
         return value
     return value
+
 
 
 @timed(unit="min")
@@ -475,6 +498,7 @@ def format_diff(filter_diffs_yaml_path, image_info, type_=None):
     return result
 
 
+@timed(unit="min")
 def reformatting_body(text):
     """Reformat marker annotation using pedurma page.
 
@@ -496,6 +520,7 @@ def reformatting_body(text):
     return result
 
 
+# @timed(unit="min")
 def add_link(text, image_info):
     """Add link of source image page.
 
@@ -532,6 +557,7 @@ def add_link(text, image_info):
     return result
 
 
+# @timed(unit="min")
 def get_page(diff, cur_loc, diffs, vol_num):
     """Extract pedurma page from diffs.
 
@@ -556,6 +582,7 @@ def get_page(diff, cur_loc, diffs, vol_num):
     return page
 
 
+# @timed(unit="min")
 def rm_marker(diff):
     """Remove marker of google ocr text.
 
@@ -589,6 +616,7 @@ def rm_marker(diff):
     return result
 
 
+# @timed(unit="min")
 def is_note(diff):
     """Check if diff text is note or marker.
 
@@ -606,6 +634,7 @@ def is_note(diff):
     return flag
 
 
+@timed(unit="min")
 def parse_pg_ref_diff(diff, result):
     """Parse page ref and marker if both exist in one diff.
 
@@ -627,6 +656,7 @@ def parse_pg_ref_diff(diff, result):
                 result.append([1, marker[0], "marker"])
 
 
+# @timed(unit="min")
 def double_marker_handler(result):
     prev2 = result[-3]
     prev1 = result[-2]
@@ -636,6 +666,7 @@ def double_marker_handler(result):
             del result[-1]
 
 
+@timed(unit="min")
 def reformat_footnotes(text):
     """Replace edition name with their respective unique id and brings every footnotes to newline.
     
@@ -644,10 +675,9 @@ def reformat_footnotes(text):
     Returns:
         (str): reformatted footnote
     """
-
-    demultiplied = demultiply_diffs(text)
-    result = demultiplied.replace("\n", "")
-    result = re.sub("(<+)", r"\n\1", result)
+    text = text.replace("\n", "")
+    text = re.sub("(<+)", r"\n\g<1>", text)
+    result = demultiply_diffs(text)
 
     editions = [
         ["«སྡེ་»", "«d»"],
@@ -666,7 +696,7 @@ def reformat_footnotes(text):
     return result
 
 
-@timed(unit='min')
+@timed(unit="min")
 def filter_diffs(diffs_yaml_path, type, image_info):
     """Filter diff of text A and text B.
 
@@ -779,6 +809,7 @@ def filter_diffs(diffs_yaml_path, type, image_info):
     return filter_diffs
 
 
+@timed(unit="min")
 def filter_footnotes_diffs(diffs_yaml_path, vol_num):
     """Filter the diffs of google ocr output and namsel ocr output.
 
@@ -816,6 +847,7 @@ def filter_footnotes_diffs(diffs_yaml_path, vol_num):
     return filtered_diffs
 
 
+@timed(unit="min")
 def postprocess_footnotes(footnotes):
     """Save the formatted footnotes to dictionary with key as page ref and value as footnotes in that page.
     Args:
@@ -851,34 +883,37 @@ def postprocess_footnotes(footnotes):
         # result[f"{walker:03}-{page_ref[1:-1]}"] = marker_list[1:]
     return result
 
+@timed(unit="min")
 def demultiply_diffs(text):
-    """ '<m⓪⓪>note' --> '<m⓪>note\n<m⓪>note' 
+    """ '<12,⓪⓪>note' --> '<12,⓪>note\n<12,⓪>note' 
 
     Arguments:
         text {str} -- [description]
 
     Returns:
         str -- [description]
-    """    
-
+    """
+    Path('data/v073/footnotes/snippet.txt').write_text(text[:1000], encoding='utf-8')
     patterns = [
-        ["(\n<m)([①-⓪])([①-⓪])([①-⓪])([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<7>\g<1>\g<3>\g<7>\g<1>\g<4>\g<7>\g<1>\g<5>\g<7>\g<1>\g<6>\g<7>"],
-        ["(\n<m)([①-⓪])([①-⓪])([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<6>\g<1>\g<3>\g<6>\g<1>\g<4>\g<6>\g<1>\g<5>\g<6>"],
-        ["(\n<m)([①-⓪])([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<5>\g<1>\g<3>\g<5>\g<1>\g<4>\g<5>"],
-        ["(\n<m)([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<4>\g<1>\g<3>\g<4>"],
+        ["(\n<\d+,)([①-⓪])([①-⓪])([①-⓪])([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<7>\g<1>\g<3>\g<7>\g<1>\g<4>\g<7>\g<1>\g<5>\g<7>\g<1>\g<6>\g<7>"],
+        ["(\n<\d+,)([①-⓪])([①-⓪])([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<6>\g<1>\g<3>\g<6>\g<1>\g<4>\g<6>\g<1>\g<5>\g<6>"],
+        ["(\n<\d+,)([①-⓪])([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<5>\g<1>\g<3>\g<5>\g<1>\g<4>\g<5>"],
+        ["(\n<\d+,)([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<4>\g<1>\g<3>\g<4>"],
     ]
 
     for p in patterns:
         result = re.sub(p[0], p[1], text)
-
+    Path('data/v073/footnotes/snippet.txt').write_text(result[:1000], encoding='utf-8')
     return result
 
+@timed(unit="min")
 def rm_diff_tag(filtered_diffs):
     result = []
     for diff in filtered_diffs:
         result.append([diff[0], diff[1]])
     return result
 
+# @timed(unit="min")
 def merge_footnotes_per_page(page, foot_notes):
     """Merge the footnote of a certain page to its body text.
 
@@ -913,6 +948,7 @@ def merge_footnotes_per_page(page, foot_notes):
     return result_with_marker, result_without_marker
 
 
+@timed(unit="min")
 def merge_footnote(body_text_path, footnote_yaml_path):
     """Merge footnotes of a whole text abjacent to the marker in their content.
 
@@ -947,6 +983,7 @@ def merge_footnote(body_text_path, footnote_yaml_path):
     return result_with_marker, result_without_marker
 
 
+@timed(unit="min")
 def flow(vol_path, source_path, target_path, text_type, image_info):
     """ - diff is computed between B and A text
         - footnotes and footnotes markers are filtered from diffs
