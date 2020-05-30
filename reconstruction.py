@@ -294,7 +294,7 @@ def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type=No
                 diffs[i + 1][1] = diffs[i + 1][1][len(first_syl):]
                 result.append([1, diff_, f'{marker_type}'])
             else:
-                if left_diff[0] != (0 or 1):       # FIXME this deletes text from 0 and 1
+                if left_diff[0] != (0 or 1):
                     lastsyl = left_diff[1].split("་")[-1]
                     result[-1][1] = result[-1][1][: -len(lastsyl)] 
                     result.append([1, diff_, f'{marker_type}'])
@@ -644,6 +644,11 @@ def reformat_footnotes(text):
     Returns:
         (str): reformatted footnote
     """
+
+    demultiplied = demultiply_diffs(text)
+    result = demultiplied.replace("\n", "")
+    result = re.sub("(<+)", r"\n\1", result)
+
     editions = [
         ["«སྡེ་»", "«d»"],
         ["«གཡུང་»", "«y»"],
@@ -655,11 +660,10 @@ def reformat_footnotes(text):
         ["«ཁུ་»", "«u»"],
         ["«ཞོལ་»", "«h»"],
     ]
-    text = text.replace("\n", "")
-    text = re.sub("(<+)", r"\n\1", text)
     # for edition, edition_id in editions:
     #     text = text.replace(edition, edition_id)
-    return text
+
+    return result
 
 
 @timed(unit='min')
@@ -808,7 +812,7 @@ def filter_footnotes_diffs(diffs_yaml_path, vol_num):
                     filtered_diffs.append(diff)
         else:
             filtered_diffs.append(diff)
-        
+    
     return filtered_diffs
 
 
@@ -845,6 +849,28 @@ def postprocess_footnotes(footnotes):
                     marker_l.append(marker)
         result.append(marker_l)
         # result[f"{walker:03}-{page_ref[1:-1]}"] = marker_list[1:]
+    return result
+
+def demultiply_diffs(text):
+    """ '<m⓪⓪>note' --> '<m⓪>note\n<m⓪>note' 
+
+    Arguments:
+        text {str} -- [description]
+
+    Returns:
+        str -- [description]
+    """    
+
+    patterns = [
+        ["(\n<m)([①-⓪])([①-⓪])([①-⓪])([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<7>\g<1>\g<3>\g<7>\g<1>\g<4>\g<7>\g<1>\g<5>\g<7>\g<1>\g<6>\g<7>"],
+        ["(\n<m)([①-⓪])([①-⓪])([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<6>\g<1>\g<3>\g<6>\g<1>\g<4>\g<6>\g<1>\g<5>\g<6>"],
+        ["(\n<m)([①-⓪])([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<5>\g<1>\g<3>\g<5>\g<1>\g<4>\g<5>"],
+        ["(\n<m)([①-⓪])([①-⓪])(>.+)","\g<1>\g<2>\g<4>\g<1>\g<3>\g<4>"],
+    ]
+
+    for p in patterns:
+        result = re.sub(p[0], p[1], text)
+
     return result
 
 def rm_diff_tag(filtered_diffs):
@@ -962,6 +988,8 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="body")
         new_text = reformatting_body(new_text)
         (dir_path / f"result.txt").write_text(new_text, encoding="utf-8")
+
+
     elif text_type == "footnotes":
         annotations = [
         ["marker", "(<m.+?>)"],
@@ -981,7 +1009,6 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="footnotes")
         # new_text = rm_markers_ann(new_text)
         new_text = reformat_footnotes(new_text)
-
         formatted_yaml = postprocess_footnotes(new_text)
         footnotes_to_yaml(formatted_yaml, dir_path)
         (dir_path / "result.txt").write_text(new_text, encoding="utf-8")
@@ -1004,7 +1031,7 @@ if __name__ == "__main__":
     for text_type in text_types:
         if text_type == 'body':
             G_path = base_path / text_type / f'{vol_num}E-{text_type}_transfered.txt'
-        else:
+        elif text_type == 'footnotes':
             G_path = base_path / text_type / f'{vol_num}G-{text_type}.txt'
         N_path = base_path / text_type / f'{vol_num}N-{text_type}.txt'
         flow(base_path, N_path, G_path, text_type, image_info)
