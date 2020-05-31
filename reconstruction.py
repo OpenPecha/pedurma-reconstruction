@@ -962,7 +962,10 @@ def merge_footnote(body_text_path, footnote_yaml_path):
     page_ann = re.findall("<p.+?>", body_text)
     result_with_marker = ""
     result_without_marker = ""
+    print(f'Page found {len(pages)} Page ref found {len(page_ann)}')
     for i, (page, footnotes) in enumerate(zip_longest(pages, footnotes, fillvalue=[])):
+        with_marker = ''
+        without_marker = ''
         try:
             with_marker, without_marker = merge_footnotes_per_page(page, footnotes)
             result_with_marker += with_marker
@@ -975,8 +978,8 @@ def merge_footnote(body_text_path, footnote_yaml_path):
             #result_without_marker += without_marker
         except:
             result_with_marker += 'page missing!'
-        result_without_marker = result_without_marker.replace("\n", "")
-        result_without_marker = re.sub("(\[.+?\])", r"\n\1", result_without_marker)
+    result_without_marker = result_without_marker.replace("\n", "")
+    result_without_marker = re.sub("(\[.+?\])", r"\n\1", result_without_marker)
     return result_with_marker, result_without_marker
 
 
