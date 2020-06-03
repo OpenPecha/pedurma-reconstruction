@@ -96,6 +96,7 @@ def to_yaml(list_, vol_path, type_=None):
 @timed(unit="min")
 def from_yaml(path):
     """Load yaml to list
+
     Args:
         path (path): path object
     Returns:
@@ -159,7 +160,6 @@ def get_pg_ann(diff, vol_num):
     Returns:
         str: page annotation
     """
-
     pg_no_pattern = f"{vol_num}\S*?(\d+)"
     pg_pat = re.search(pg_no_pattern, diff)
     pg_num = pg_pat.group(1)
@@ -264,7 +264,15 @@ def is_midsyl(left_diff, right_diff):
     return False
 
 # @timed(unit="min")
-def double_mid_syl_marker(result, diff):
+def double_mid_syl_marker(result):
+    """Handle the consecutive marker occurance in body text.
+
+    Args:
+        result (list): filtered diffs
+
+    Returns:
+        Boolean: True if double consecutive marker detected in case of mid syl esle false
+    """
     i= -1
     while not is_punct(result[i][1]):
         if result[i][2] == 'marker':
@@ -287,7 +295,7 @@ def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type=No
         marker_type (str): marker type can be marker or candidate marker
     """
     # make it marker if marker found  (revision)
-    if double_mid_syl_marker(result, diff):
+    if double_mid_syl_marker(result):
         diff_ = rm_noise(diff[1])
         if left_diff[1][-1] == " ":
             lasttwo = left_diff[1][-2:]
@@ -315,16 +323,6 @@ def handle_mid_syl(result, diffs, left_diff, i, diff, right_diff, marker_type=No
                     result[-1][1] = result[-1][1][: -len(lastsyl)] 
                     result.append([1, diff_, f'{marker_type}'])
                     diffs[i + 1][1] = lastsyl + diffs[i + 1][1]
-
-
-# @timed(unit="min")
-def handle_google_marker(diff, result):
-    extras = re.sub("#", "", diff)
-    if result:
-        result[-1][1] += extras
-    else:
-        result.append([1, extras, ""])
-    result.append([1, "#", "marker"])
 
 
 # @timed(unit="min")
@@ -472,10 +470,6 @@ def format_diff(filter_diffs_yaml_path, image_info, type_=None):
     vol_num = image_info[1]
     result = ""
     for diff_type, diff_text, diff_tag in diffs:
-        # if diff_type == 0:
-        #     result += diff_text
-        # if diff_text == '<m༅>':
-        #     print('check')
         if diff_type == 1 or diff_type == 0:
             if diff_tag:
                 if diff_tag == "pedurma-page" and type_ == "body":
@@ -766,8 +760,6 @@ def filter_diffs(diffs_yaml_path, type, image_info):
                             tseg_shifter(result, diffs, left_diff, i, right_diff)
                             result.append([1, diff_, "marker"])
                 elif right_diff[0] == 1:
-                    if diff[1] == 'གཤེ':
-                        print('check')
                     # Check if current diff is located in middle of syllabus or not.
                     if is_midsyl(left_diff[1], right_diff[1]) and get_marker(diff[1]):
                         handle_mid_syl(
@@ -850,6 +842,7 @@ def filter_footnotes_diffs(diffs_yaml_path, vol_num):
 @timed(unit="min")
 def postprocess_footnotes(footnotes):
     """Save the formatted footnotes to dictionary with key as page ref and value as footnotes in that page.
+    
     Args:
         footnotes (str): formatted footnote
     Returns:
@@ -1044,7 +1037,6 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         filtered_diffs = filter_footnotes_diffs(diffs_yaml_path, image_info[1])
         filtered_diffs_to_yaml(filtered_diffs, dir_path)
         new_text = format_diff(filtered_diffs_yaml_path, image_info, type_="footnotes")
-        # new_text = rm_markers_ann(new_text)
         reformatted_footnotes = reformat_footnotes(new_text)
         formatted_yaml = postprocess_footnotes(reformatted_footnotes)
         footnotes_to_yaml(formatted_yaml, dir_path)
