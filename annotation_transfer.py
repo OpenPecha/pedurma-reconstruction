@@ -4,6 +4,8 @@ import yaml
 from diff_match_patch import diff_match_patch
 from horology import timed
 
+tofu_lower_limit = 200000
+tofu_upper_limit = 1112064
 
 @timed(unit="min")
 def get_diffs(A, B):
@@ -69,7 +71,7 @@ def tag_to_tofu(content, annotations):
         split_list = re.split(annotation[1], new_content)
         for i, e in enumerate(split_list):
             if re.search(annotation[1], e):
-                tofu = chr(tofu_walker + 1000000)
+                tofu = chr(tofu_walker + tofu_lower_limit)
                 tofu_walker += 1
                 tofu_mapping[tofu] = [annotation[0], e]
                 split_list[i] = tofu
@@ -85,8 +87,8 @@ def filter_diff(diffs_list, tofu_mapping):
             result.append([diff_type, diff_text, ""])
         elif diff_type == -1:
             # tofu-IDs are limited to 1114111
-            if re.search(f"[{chr(1000000)}-{chr(1114111)}]", diff_text):
-                anns = re.split(f"([{chr(1000000)}-{chr(1114111)}])", diff_text)
+            if re.search(f"[{chr(tofu_lower_limit)}-{chr(tofu_upper_limit)}]", diff_text):
+                anns = re.split(f"([{chr(tofu_lower_limit)}-{chr(tofu_upper_limit)}])", diff_text)
                 for ann in anns:
                     if ann:
                         if tofu_mapping.get(ann):
