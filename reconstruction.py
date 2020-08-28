@@ -17,11 +17,12 @@ from functools import partial
 import yaml
 from diff_match_patch import diff_match_patch
 from preprocess import preprocess_google_notes, preprocess_namsel_notes
-from annotation_transfer import transfer
+from utils import optimized_diff_match_patch
+from antx import transfer
 from horology import timed
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def preprocess_footnotes(B, A):
     """Normalise edition markers to minimise noise in diffs.
 
@@ -33,17 +34,17 @@ def preprocess_footnotes(B, A):
         str: normalised source text
     """
     patterns = [["〈〈?", "«"], ["〉〉?", "»"], ["《", "«"], ["》", "»"]]
-    clean_N = B
-    clean_G = A
+    clean_namsel_text = B
+    clean_google_text = A
     for pattern in patterns:
-        clean_N = re.sub(pattern[0], pattern[1], clean_N)
-        clean_G = re.sub(pattern[0], pattern[1], clean_G)
-    return clean_N, clean_G
+        clean_namsel_text = re.sub(pattern[0], pattern[1], clean_namsel_text)
+        clean_google_text = re.sub(pattern[0], pattern[1], clean_google_text)
+    return clean_namsel_text, clean_google_text
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def rm_google_ocr_header(text):
-    """Remove header of google ocr
+    """Remove header of google ocr.
 
     Args:
         text (str): google ocr
@@ -58,26 +59,28 @@ def rm_google_ocr_header(text):
 
 
 @timed(unit="min")
-def get_diff(B, A):
-    """Compute diff between target and source using DMP.
+def get_diffs(text1, text2, optimized= True):
+    """Compute diff between source and target with DMP.
 
     Args:
-        target (str): target text
         source (str): source text
+        target (str): target text
+        optimized (bool): whether to use optimized dmp with node.
     Returns:
         list: list of diffs
     """
-    dmp = diff_match_patch()
-    # Diff_timeout is set to 0 inorder to compute diff till end of file.
-    dmp.Diff_Timeout = 0
-    diffs = dmp.diff_main(B, A)
-    # beautifies the diff list
-    # dmp.diff_cleanupSemantic(diffs)
-    print("Diff computation completed.")
+    print("[INFO] Computing diffs ...")
+    if optimized:
+        dmp = optimized_diff_match_patch()
+    else:
+        dmp = diff_match_patch()
+        dmp.Diff_Timeout = 0  # compute diff till end of file
+    diffs = dmp.diff_main(text1, text2)
+    print("[INFO] Diff computed!")
     return diffs
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def to_yaml(list_, vol_path, type_=None):
     """Dump list to yaml and write the yaml to a file on mentioned path.
 
@@ -93,7 +96,7 @@ def to_yaml(list_, vol_path, type_=None):
     print(f"{type_} Yaml saved...")
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def from_yaml(path):
     """Load yaml to list
 
@@ -130,7 +133,7 @@ def rm_noise(diff):
     return result
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def rm_markers_ann(text):
     """Remove page annotation and replace footnotesmarker with #.
 
@@ -455,7 +458,7 @@ def get_value(footnotes_marker):
 
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def format_diff(filter_diffs_yaml_path, image_info, type_=None):
     """Format list of diff on target text.
 
@@ -492,7 +495,7 @@ def format_diff(filter_diffs_yaml_path, image_info, type_=None):
     return result
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def reformatting_body(text):
     """Reformat marker annotation using pedurma page.
 
@@ -628,7 +631,7 @@ def is_note(diff):
     return flag
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def parse_pg_ref_diff(diff, result):
     """Parse page ref and marker if both exist in one diff.
 
@@ -660,7 +663,7 @@ def double_marker_handler(result):
             del result[-1]
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def reformat_footnotes(text):
     """Replace edition name with their respective unique id and brings every footnotes to newline.
     
@@ -690,7 +693,7 @@ def reformat_footnotes(text):
     return result
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def filter_diffs(diffs_yaml_path, type, image_info):
     """Filter diff of text A and text B.
 
@@ -801,7 +804,7 @@ def filter_diffs(diffs_yaml_path, type, image_info):
     return filter_diffs
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def filter_footnotes_diffs(diffs_yaml_path, vol_num):
     """Filter the diffs of google ocr output and namsel ocr output.
 
@@ -839,7 +842,7 @@ def filter_footnotes_diffs(diffs_yaml_path, vol_num):
     return filtered_diffs
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def postprocess_footnotes(footnotes):
     """Save the formatted footnotes to dictionary with key as page ref and value as footnotes in that page.
     
@@ -876,7 +879,7 @@ def postprocess_footnotes(footnotes):
         # result[f"{walker:03}-{page_ref[1:-1]}"] = marker_list[1:]
     return result
 
-@timed(unit="min")
+#@timed(unit="min")
 def demultiply_diffs(text):
     """ '<12,⓪⓪>note' --> '<12,⓪>note\n<12,⓪>note' 
 
@@ -896,7 +899,7 @@ def demultiply_diffs(text):
         text = re.sub(p[0], p[1], text)
     return text
 
-@timed(unit="min")
+#@timed(unit="min")
 def rm_diff_tag(filtered_diffs):
     result = []
     for diff in filtered_diffs:
@@ -938,7 +941,7 @@ def merge_footnotes_per_page(page, foot_notes):
     return result_with_marker, result_without_marker
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def merge_footnote(body_text_path, footnote_yaml_path):
     """Merge footnotes of a whole text abjacent to the marker in their content.
 
@@ -976,7 +979,7 @@ def merge_footnote(body_text_path, footnote_yaml_path):
     return result_with_marker, result_without_marker
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def flow(vol_path, source_path, target_path, text_type, image_info):
     """ - diff is computed between B and A text
         - footnotes and footnotes markers are filtered from diffs
@@ -989,8 +992,8 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         image_info (list): Contains work_id, volume number and source image offset
     """
     volume_no = image_info[1]
-    N = source_path.read_text(encoding="utf-8")
-    G = target_path.read_text(encoding="utf-8")
+    namsel_text = source_path.read_text(encoding="utf-8")
+    google_text = target_path.read_text(encoding="utf-8")
     diffs_to_yaml = partial(to_yaml, type_="diffs")  # customising to_yaml function for diff list
     filtered_diffs_to_yaml = partial(
         to_yaml, type_="filtered_diffs"
@@ -1004,11 +1007,11 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
     # Text_type can be either body of the text or footnote footnote.
     if text_type == "body":
         # patterns = [['google_marker','(#)'],["pages", "\[\d+[ab]\]"]]
-        # transformed_namsel = transfer(G, patterns, N, output='txt')
-        # N = transformed_namsel.replace('#་','་#')
-        # G = G.replace('#','')
+        # transformed_namsel = transfer(google_text, patterns, namsel_text, output='txt')
+        # namsel_text = transformed_namsel.replace('#་','་#')
+        # google_text = google_text.replace('#','')
         print("Calculating diffs...")
-        diffs = get_diff(N, G)
+        diffs = get_diffs(namsel_text, google_text)
         diffs_list = list(map(list, diffs))
         diffs_to_yaml(diffs_list, dir_path)
         print("Filtering diffs...")
@@ -1027,11 +1030,11 @@ def flow(vol_path, source_path, target_path, text_type, image_info):
         ["pg_ref", "(<r.+?>)"],
         ["pedurma_page", "(<p.+?>)"],
     ]
-        G = rm_google_ocr_header(G)
-        clean_G = preprocess_google_notes(G)
-        clean_N = preprocess_namsel_notes(N)
+        google_text = rm_google_ocr_header(google_text)
+        clean_google_text = preprocess_google_notes(google_text)
+        clean_namsel_text = preprocess_namsel_notes(namsel_text)
         print("Calculating diffs..")
-        diffs = transfer(clean_N, annotations, clean_G)
+        diffs = transfer(clean_namsel_text, annotations, clean_google_text)
         diffs_list = list(map(list, diffs))
         diffs_to_yaml(diffs_list, dir_path)
         filtered_diffs = filter_footnotes_diffs(diffs_yaml_path, image_info[1])
@@ -1059,11 +1062,11 @@ if __name__ == "__main__":
     base_path = Path(f'./data/v{vol_num:03}')
     for text_type in text_types:
         if text_type == 'body':
-            G_path = base_path / text_type / f'{vol_num}E-{text_type}_transfered.txt'
+            google_text_path = base_path / text_type / f'{vol_num}E-{text_type}_transfered.txt'
         else:
-            G_path = base_path / text_type / f'{vol_num}G-{text_type}.txt'
-        N_path = base_path / text_type / f'{vol_num}N-{text_type}.txt'
-        flow(base_path, N_path, G_path, text_type, image_info)
+            google_text_path = base_path / text_type / f'{vol_num}G-{text_type}.txt'
+        namsel_text_path = base_path / text_type / f'{vol_num}N-{text_type}.txt'
+        flow(base_path, namsel_text_path, google_text_path, text_type, image_info)
         print(f'{text_type} part done..')
     body_result_path = base_path / f'body/result.txt'
     footnote_yaml_path = base_path / f'footnotes/footnotes.yaml'
