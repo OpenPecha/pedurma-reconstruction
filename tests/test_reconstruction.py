@@ -62,7 +62,7 @@ def test_reconstruction():
     source = Path(source_path).read_text()
     # expected = Path(truth_path).read_text()
     print("Calculating diff...")
-    diffs = reconstruction.get_diff(source, target)
+    diffs = reconstruction.get_diffs(source, target)
     diffs_list = list(map(list, diffs))
     diffs_to_yaml(diffs_list, vol_path)
     filtered_diffs = reconstruction.filter_diffs(diffs_list, "body", image_info)

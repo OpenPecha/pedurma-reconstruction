@@ -2,12 +2,12 @@ import re
 from pathlib import Path
 import yaml
 from diff_match_patch import diff_match_patch
-from horology import timed
+#from horology import timed
 
 tofu_lower_limit = 200000
 tofu_upper_limit = 1112064
 
-@timed(unit="min")
+#@timed(unit="min")
 def get_diffs(A, B):
     """Compute diff between source and target with DMP.
     Args:
@@ -25,7 +25,7 @@ def get_diffs(A, B):
     return diffs_list
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def to_yaml(list_,):
     """Dump list to yaml and write the yaml to a file on mentioned path.
     Args:
@@ -37,7 +37,7 @@ def to_yaml(list_,):
     return list_yaml
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def from_yaml(path):
     """Load yaml to list
     Args:
@@ -49,7 +49,7 @@ def from_yaml(path):
     return diffs_list
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def to_text(diffs):
     result = ""
     for diff in diffs:
@@ -99,7 +99,7 @@ def filter_diff(diffs_list, tofu_mapping):
     return result
 
 
-@timed(unit="min")
+#@timed(unit="min")
 def transfer(source, patterns, target, output="diff"):
     """Extract annotations from with regex patterns and transfer to target
 
