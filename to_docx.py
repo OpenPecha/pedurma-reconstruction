@@ -29,7 +29,7 @@ def create_docx(chunks, page_span, path):
 
     p = path.parent / "docx"
     p.mkdir(parents=True, exist_ok=True)
-    out_path = path.parent / "docx" / f"{source_path.stem}_{page_span[0]}-{page_span[1]}.docx"
+    out_path = path.parent / "docx" / f"{path.stem}_{page_span[0]}-{page_span[1]}.docx"
     document.save(str(out_path))
 
 
