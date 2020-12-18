@@ -167,6 +167,7 @@ def preprocess_namsel_notes(text):
         # tag note markers <note>
         ["([ཤཀག།\n] )([^།»\}<>]+)«", "\g<1>\n<m\g<2>>«"],
         ["<\n(\{.+?)>«", "\g<1>«"],  # fix special note markers
+        ["([①-㊿]+)[^«]","\n<m\g<1>>"],
         ["(\s?[①-㊿༠-༩]+)«", "\n<m\g<1>>«"],
         ["\n<m([^ >]+?[ཤཀག།] )", "\g<1>\n<m"],  # fix multi-syls A
         ["\n([^།»\{}<>]+)«", "\n<m\g<1>>«"],  # fix ref at line start
