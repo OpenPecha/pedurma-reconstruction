@@ -1,8 +1,48 @@
 # coding='utf-8'
-from pathlib import Path
 import re
+from pathlib import Path
+from antx import transfer
 
 
+def get_pages(vol_text):
+    result = []
+    pg_text = ""
+    pages = re.split(r"(\[[𰵀-󴉱]?[0-9]+[a-z]{1}\])", vol_text)
+    for i, page in enumerate(pages[1:]):
+        if i % 2 == 0:
+            pg_text += page
+        else:
+            pg_text += page
+            result.append(pg_text)
+            pg_text = ""
+    return result
+
+def rm_ann(text, anns):
+    result = text
+    for ann in anns:
+        result = re.sub(ann, '', result)
+    return result
+
+def is_note_page(g_page, dg_page):
+    if (len(g_page) - len(dg_page) > 1000) or re.search('<d', g_page):
+        return True
+    else:
+        return False
+
+def get_derge_google_text(derge_hfml, google_hfml):
+    derge_google_text = ''
+    anns = ["\n", "\[\w+\.\d+\]", "\[[𰵀-󴉱]?[0-9]+[a-z]{1}\]"]
+    derge_hfml = rm_ann(derge_hfml, anns)
+    dg_body = transfer(google_hfml, [['linebreak', '(\n)'], ['pg_ann', '(\[[𰵀-󴉱]?[0-9]+[a-z]{1}\])']], derge_hfml, output='txt')
+    dg_pages = get_pages(dg_body)
+    g_pages = get_pages(google_hfml)
+    for g_page, dg_page in zip(g_pages, dg_pages):
+        if is_note_page(g_page, dg_page):
+            derge_google_text += g_page
+        else:
+            derge_google_text += dg_page
+    return derge_google_text
+    
 def derge_page_increment(p_num):
     sides = {"a": "b", "b": "a"}
     page, side = int(p_num[1:-2]), p_num[-2:-1]
