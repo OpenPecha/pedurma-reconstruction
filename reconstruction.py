@@ -782,7 +782,7 @@ def filter_footnotes_diffs(diffs_list, vol_num):
             if i < len(diffs) - 1:  # extracting right context of current diff
                 right_diff = diffs[i + 1]
             left_diff_tag = left_diff[2]
-            if left_diff_tag != "marker":
+            if left_diff_tag != "marker" and left_diff_tag != "pedurma-page":
                 if "4" in diff_text:
                     right_diff_text = rm_noise(right_diff[1])
                     if re.search("\d{2}", diff_text) or not right_diff_text:
@@ -962,7 +962,7 @@ def reconstruct_footnote(namsel_footnote, google_footnote, text_meta):
         ["pedurma-page", "(<p.+?>)"],
     ]
     print("Calculating diffs..")
-    diffs = transfer(clean_google_footnote, annotations, clean_namsel_footnote)
+    diffs = transfer(clean_namsel_footnote, annotations, clean_google_footnote)
     diffs_list = list(map(list, diffs))
     filtered_diffs = filter_footnotes_diffs(diffs_list, text_meta['vol'])
     new_text = format_diff(filtered_diffs, text_meta, type_="footnotes")
@@ -977,6 +977,25 @@ def get_whole(pagewise_text_durchen, type):
         result += f"[{pg_ann}]\n{pg_content['pg_content']}"
     return result
 
+
+def get_page_index(pg_num):
+    pg_index = ''
+    if pg_num % 2 == 0:
+        pg_index = f"{pg_num/2}b"
+    else:
+        pg_index = f"{pg_num/2+1}a"
+    return pg_index
+
+
+def serialize_text(text):
+    result = ''
+    pages = text.pages
+    for page in pages:
+        pg_ann = get_page_index(page.page_no)
+        pg_content = page.content
+        result += f"[{pg_ann}]\n{pg_content['pg_content']}"
+    return result
+
 def rm_ann(text, anns):
     result = text
     for ann in anns:
@@ -988,6 +1007,15 @@ def get_page_num(body_text, text_meta):
     pg_pat = re.search(f'<p{vol}-(\d+)>', body_text)
     pg_num = int(pg_pat.group(1))
     return pg_num
+
+def get_preview_page(g_body_page, n_body_page, g_durchen_page, n_durchen_page, text_meta):
+    n_body_page = transfer(g_body_page, [['pedurma', '(#)'],], n_body_page, output='txt')
+    g_body_page = g_body_page.replace('#', '')
+    body_result = reconstruct_body(n_body_page, g_body_page, text_meta)
+    footnote_yaml = reconstruct_footnote(n_durchen_page, g_durchen_page, text_meta)
+    pg_num = get_page_num(body_result, text_meta)
+    merge_marker, merge = merge_footnotes_per_page(body_result, footnote_yaml[pg_num])
+    return merge
 
 if __name__ == "__main__":
     text_id = 'D1110'

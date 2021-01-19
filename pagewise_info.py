@@ -95,6 +95,4 @@ def parse_text(text_id, text_content, text_meta):
         'durchen': pg_wise_durchen
     }
     return text_durchen
-    text_durchen_yml = yaml.safe_dump(text_durchen, sort_keys=False, allow_unicode=True)
-    Path(f'./D1109_pg_wise.yml').write_text(text_durchen_json)
 

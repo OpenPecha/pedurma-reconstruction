@@ -68,6 +68,8 @@ def preprocess_google_notes(text):
         ["་\s*", "་"],
         ["་\s*\n", "་"],
         ["་+", "་"],
+        # normalize and tag page numbers '73ཝ་768' --> ' <p73-768> '
+        ["([0-9]+?)[ཝ—-]་?([0-9]+)", " <p\g<1>-\g<2>> "],
         #
         # ["([^+\s་ཀ-ྼ])། ", "\g<1>?། "],  # ༧། TODO
         # special notes
@@ -491,22 +493,22 @@ def translate_ref(content):
 
 if __name__ == "__main__":
     # Path to the initial Google OCR file
-    basePath = Path("data")
+    # basePath = Path("data")
  
-    # Google footnotes
-    googlePath = basePath / "v073/footnotes/73G-footnotes.txt"
-    google_content = googlePath.read_text(encoding="utf-8")
-    # get text
-    googlePrep = preprocess_google_notes(google_content)
-    # get text
-    save(googlePrep, googlePath, "_num")
+    # # Google footnotes
+    # googlePath = basePath / "v073/footnotes/73G-footnotes.txt"
+    # google_content = googlePath.read_text(encoding="utf-8")
+    # # get text
+    # googlePrep = preprocess_google_notes(google_content)
+    # # get text
+    # save(googlePrep, googlePath, "_num")
     # # get text
     # # googleProc = process(googlePrep, init_num)
 
     # Namsel footnotes
-    # namselPath = basePath / "v073/footnotes/73N-footnotes.txt"
-    # namsel_content = namselPath.read_text(encoding="utf-8")
-    # namselPrep = preprocess_namsel_notes(namsel_content)
-    # with_sn = add_sn(namselPrep)
-    # save(with_sn, namselPath, "_num")
+    namselPath = Path("./D1118_namsel.txt")
+    namsel_content = namselPath.read_text(encoding="utf-8")
+    namselPrep = preprocess_namsel_notes(namsel_content)
+    with_sn = add_sn(namselPrep)
+    Path('./D1118.txt').write_text(namselPrep, encoding='utf-8')
 
