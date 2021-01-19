@@ -1066,8 +1066,8 @@ def get_clean_namsel_durchen(namsel_footnote_path, dir_path):
 
 def reconstruct_footnote(vol_path, namsel_footnote_path, google_footnote_path, image_info):
     dir_path = vol_path / "footnotes"
-    clean_namsel_footnote = get_clean_google_durchen(google_footnote_path, dir_path)
-    clean_google_footnote = get_clean_namsel_durchen(namsel_footnote_path, dir_path)
+    clean_google_footnote = get_clean_google_durchen(google_footnote_path, dir_path)
+    clean_namsel_footnote = get_clean_namsel_durchen(namsel_footnote_path, dir_path)
     annotations = annotations = [
         ["marker", "(<m.+?>)"],
         ["marker", "([①-⑩])"],
