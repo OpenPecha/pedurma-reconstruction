@@ -148,7 +148,9 @@ def preprocess_namsel_notes(text):
         [" ?([༠-༩]+?)(\s\(?[①-⓪༠-༩ ཿ༅]\)?)", " \n<r\g<1>>\g<2>"],  # basic page ref
         # normalize edition marks «<edition>»
         ["〈〈?", "«"],
+        ["〈〈?", "«"],
         ["〉〉?", "»"],
+        ["〉〉?", "»"],
         ["《", "«"],
         ["》", "»"],
         ["([ཀགཤ།]) །«", "\g<1> «"],

@@ -942,13 +942,11 @@ def reconstruct_body(source, target, text_meta):
 def get_clean_google_durchen(google_footnote):
     google_footnote = rm_google_ocr_header(google_footnote)
     clean_google_footnote = preprocess_google_notes(google_footnote)
-    Path("./data/D1110/clean_g_fn.txt").write_text(clean_google_footnote, encoding="utf-8")
     return clean_google_footnote
 
 
 def get_clean_namsel_durchen(namsel_footnote):
     clean_namsel_footnote = preprocess_namsel_notes(namsel_footnote)
-    Path("./data/D1110/clean_n_fn.txt").write_text(clean_namsel_footnote, encoding="utf-8")
     return clean_namsel_footnote
 
 
