@@ -146,7 +146,9 @@ def preprocess_namsel_notes(text):
         [" ?([༠-༩]+?)(\s\(?[①-⓪༠-༩ ཿ༅]\)?)", " \n<r\g<1>>\g<2>"],  # basic page ref
         # normalize edition marks «<edition>»
         ["〈〈?", "«"],
+        ["〈〈?", "«"],
         ["〉〉?", "»"],
+        ["〉〉?", "»"],
         ["《", "«"],
         ["》", "»"],
         ["([ཀགཤ།]) །«", "\g<1> «"],
@@ -493,10 +495,10 @@ if __name__ == "__main__":
     basePath = Path("data")
  
     # Google footnotes
-    googlePath = basePath / "v073/footnotes/73G-footnotes.txt"
+    googlePath = basePath / "v073/footnotes/test"
     google_content = googlePath.read_text(encoding="utf-8")
     # get text
-    googlePrep = preprocess_google_notes(google_content)
+    googlePrep = preprocess_namsel_notes(google_content)
     # get text
     save(googlePrep, googlePath, "_num")
     # # get text
